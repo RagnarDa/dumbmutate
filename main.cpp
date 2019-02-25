@@ -16,42 +16,8 @@ bool Compile();
 
 bool Test();
 
-#include <stdio.h>
-#include <stdlib.h>
-
-int pipetest( void )
-{
-
-	char   psBuffer[128];
-	FILE   *pPipe;
-
-	/* Run DIR so that it writes its output to a pipe. Open this
-	 * pipe with read text attribute so that we can read it
-	 * like a text file.
-	 */
-
-	if( (pPipe = popen( "./A6E", "w" )) == NULL )
-		exit( 1 );
-
-	/* Read pipe until end of file, or an error occurs. */
-
-	while(fgets(psBuffer, 128, pPipe) || !feof(pPipe))
-	{
-		printf(psBuffer);
-	}
-
-
-
-	/* Close pipe and print return value of pPipe. */
-	if (feof( pPipe))
-	{
-		printf( "\nProcess returned %d\n", pclose( pPipe ) );
-	}
-	else
-	{
-		printf( "Error: Failed to read the pipe to the end.\n");
-	}
-}
+#include <cstdio>
+#include <cstdlib>
 
 cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 {
@@ -133,6 +99,12 @@ int main(int argc, char* argv[])
 	size_t mutations = 0, compilefailes = 0, testfailes = 0, survived = 0;
 	std::vector<MutatorBase*> Mutations({new MutatorEqual(), new MutatorAddSubtr(), new MutatorCaret()});
 	for (int i = 0; i < file.LineCount(); ++i) {
+		double percentagedone = (double)i/(double)file.LineCount();
+		auto timeelapsed = std::chrono::system_clock::now() - end;
+		std::chrono::duration<double> timeremaining = (timeelapsed / percentagedone)-timeelapsed;
+		std::cout << std::endl << std::endl << "******" << std::endl;
+		std::cout << "Approximately " << std::floor(percentagedone*100) << "% done, " << std::floor(timeremaining.count()/(1000*1000*60)) << " minutes left." << std::endl;
+		std::cout << std::endl << "******" << std::endl << std::endl;
 		const std::string &line = file.GetLine(i);
 		SourceFile::MutationResult result = SourceFile::NoMutation;
 		for (auto &mutator : Mutations) {
@@ -170,55 +142,27 @@ int main(int argc, char* argv[])
 
 	std::cout << std::endl;
 	std::cout << "----------------------" << std::endl;
+	std::cout << "Time: " << std::floor((std::chrono::system_clock::now()-end).count()/(1000*1000*60)) << std::endl;
 	std::cout << "Mutations: " << mutations << std::endl;
 	std::cout << "Compile failed: " << compilefailes << std::endl;
 	std::cout << "Test failed: " << testfailes << std::endl;
 	std::cout << "Survived: " << survived << std::endl;
-	return survived;
+	std::cout << "----------------------" << std::endl;
+	return static_cast<int>(survived);
 }
 
 
 bool RunCommand(const char * command)
 {
-	int rtrn = system(command);
-//	std::cout << "Returned " << rtrn << std::endl;
-	return (rtrn == 0);
-}
-
-bool RunCommand(const char * command, std::chrono::duration<double> timeout)
-{
-	return RunCommand(command);
-	std::mutex m;
-	std::condition_variable cv;
-	bool retValue = false;
-
-	std::thread t([&cv, &retValue, &command]()
-	              {
-		              retValue = RunCommand(command);
-		              cv.notify_one();
-	              });
-
-	t.detach();
-	std::thread::native_handle_type handle = t.native_handle();
-
-	{
-		std::unique_lock<std::mutex> l(m);
-		if(cv.wait_for(l, std::chrono::duration<double>(60*10000)) == std::cv_status::timeout) {
-			std::cout << "Timed out" << std::endl;
-			//pthread_cancel(handle);
-			return false;
-		}
-	}
-	std::cout << "Retval " << retValue;
-	return retValue;
+	return (system(command) == 0);
 }
 
 bool Test() {
 	std::cout << "Testing." << std::endl;
-	return RunCommand(testcommand.c_str(),testtime*3);
+	return RunCommand(testcommand.c_str());
 }
 
 bool Compile() {
 	std::cout << "Compiling." << std::endl;
-	return RunCommand(compilecommand.c_str(), compiletime*100);
+	return RunCommand(compilecommand.c_str());
 }
