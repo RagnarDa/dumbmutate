@@ -1,3 +1,4 @@
+const int SecondsToMinutes = (60*1000);
 #include <iostream>
 #include "SourceFile.h"
 #include "HTMLExporter.h"
@@ -110,7 +111,7 @@ int main(int argc, char* argv[])
 		std::cout << std::endl << std::endl << "********************************************" << std::endl;
 		std::cout << "Mutation progress:" << std::endl;
 		std::cout << i << " of " << file.LineCount() << " lines processed in " << (timeelapsed.count() / (1000*1000)) << " seconds." << std::endl;
-		std::cout << "Approximately " << (int)(percentagedone*100) << "% done, " << (timeremainings/(60)) << " minutes left." << std::endl;
+		std::cout << "Approximately " << (int)(percentagedone*100) << "% done, " << (timeremainings/(SecondsToMinutes)) << " minutes left." << std::endl;
 		std::cout << "********************************************" << std::endl << std::endl;
 		const std::string &line = file.GetLine(i);
 		SourceFile::MutationResult result = SourceFile::NoMutation;
@@ -158,7 +159,7 @@ int main(int argc, char* argv[])
 	
 	std::cout << std::endl << std::endl;
 	std::cout << "----------------------" << std::endl;
-	std::cout << "Time: " << (int)((std::chrono::system_clock::now()-end).count()/(1000*1000*60)) << " minutes" << std::endl;
+	std::cout << "Time: " << (int)((std::chrono::system_clock::now()-end).count()/(1000*1000*1000*60)) << " minutes" << std::endl;
 	std::cout << "Lines: " << file.LineCount() << std::endl;
 	std::cout << "Mutations: " << mutations << std::endl;
 	std::cout << "Compile failed: " << compilefailes << std::endl;

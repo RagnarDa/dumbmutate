@@ -5,12 +5,13 @@
 #include "SourceFile.h"
 #include <fstream>
 #include <iostream>
+#include <cassert>
 
 SourceFile::SourceFile(std::string FilePathToLoad) : FilePath(FilePathToLoad) {
 	std::ifstream in(FilePath);
 	if (!in)
 	{
-		std::cerr << "Couldn't load the specified source file.";
+		std::cerr << "Couldn't load the specified source file: " << FilePath << std::endl;
 		throw in.exceptions();
 	}
 	std::string line;
