@@ -38,7 +38,7 @@ private:
 	std::vector<std::pair<std::string,MutationResult>> Saved;
 	size_t LatestModifiedLine = 0;
 	std::string FilePath;
-	size_t linecount;
+	size_t linecount = 0;
 	void WriteFile(std::vector<std::string> &vector) const;
 };
 

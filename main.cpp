@@ -4,6 +4,7 @@
 #include "MutatorAddSubtr.h"
 #include "MutatorCaret.h"
 #include "MutatorEqual.h"
+#include "MutatorNEqual.h"
 
 #include "cxxopts.hpp"
 #include <iostream>
@@ -73,7 +74,8 @@ int main(int argc, char* argv[])
 	//pipetest();
 	//return 0;
 	auto result = ParseCommandLine(argc, argv);
-	SourceFile file(result["file"].as<std::string>());
+	std::string filepath = result["file"].as<std::string>();
+	SourceFile file(filepath);
 	compilecommand = result["compile"].as<std::string>();
 	testcommand = result["test"].as<std::string>();
 	auto start = std::chrono::system_clock::now();
@@ -84,7 +86,7 @@ int main(int argc, char* argv[])
 	};
 	auto end = std::chrono::system_clock::now();
 	compiletime = end-start;
-	std::cout << "Normal compile-time: " << compiletime.count() << std::endl;
+	std::cout << "Nominal compile-time: " << compiletime.count() << std::endl;
 	start = std::chrono::system_clock::now();
 	if (!Test()) {
 		std::cerr << "Unmodified test failed. Fix your program.";
@@ -92,19 +94,24 @@ int main(int argc, char* argv[])
 	}
 	end = std::chrono::system_clock::now();
 	testtime = end-start;
-	std::cout << "Normal test-time: " << compiletime.count() << std::endl;
+	std::cout << "Nominal test-time: " << testtime.count() << std::endl;
 
 	// TODO: More mutations
+	// TODO: Mutations as options.
 
 	size_t mutations = 0, compilefailes = 0, testfailes = 0, survived = 0;
-	std::vector<MutatorBase*> Mutations({new MutatorEqual(), new MutatorAddSubtr(), new MutatorCaret()});
+	std::vector<MutatorBase*> Mutations({new MutatorEqual(), new MutatorAddSubtr(), new MutatorCaret(), new MutatorNEqual});
 	for (int i = 0; i < file.LineCount(); ++i) {
 		double percentagedone = (double)i/(double)file.LineCount();
 		auto timeelapsed = std::chrono::system_clock::now() - end;
+		double timeelapseds = timeelapsed.count()/(1000.0*1000.0);
 		std::chrono::duration<double> timeremaining = (timeelapsed / percentagedone)-timeelapsed;
-		std::cout << std::endl << std::endl << "******" << std::endl;
-		std::cout << "Approximately " << std::floor(percentagedone*100) << "% done, " << std::floor(timeremaining.count()/(1000*1000*60)) << " minutes left." << std::endl;
-		std::cout << std::endl << "******" << std::endl << std::endl;
+		int timeremainings = (timeelapseds / percentagedone)-timeelapseds;
+		std::cout << std::endl << std::endl << "********************************************" << std::endl;
+		std::cout << "Mutation progress:" << std::endl;
+		std::cout << i << " of " << file.LineCount() << " lines processed in " << (timeelapsed.count() / (1000*1000)) << " seconds." << std::endl;
+		std::cout << "Approximately " << (int)(percentagedone*100) << "% done, " << (timeremainings/(60)) << " minutes left." << std::endl;
+		std::cout << "********************************************" << std::endl << std::endl;
 		const std::string &line = file.GetLine(i);
 		SourceFile::MutationResult result = SourceFile::NoMutation;
 		for (auto &mutator : Mutations) {
@@ -140,13 +147,23 @@ int main(int argc, char* argv[])
 		file.Revert();
 	}
 
-	std::cout << std::endl;
+	std::cout << std::endl << std::endl;
+	std::cout << "The following mutations survived: " << std::endl;
+	for (int i = 0; i < file.LineCount(); ++i) {
+		if (file.GetSaved().at(i).second == SourceFile::MutationResult::Survived)
+		{
+			std::cout << filepath << ":" << (i+1) << ":1 " << file.GetSaved().at(i).first << std::endl;
+		}
+	}
+	
+	std::cout << std::endl << std::endl;
 	std::cout << "----------------------" << std::endl;
-	std::cout << "Time: " << std::floor((std::chrono::system_clock::now()-end).count()/(1000*1000*60)) << std::endl;
+	std::cout << "Time: " << (int)((std::chrono::system_clock::now()-end).count()/(1000*1000*60)) << " minutes" << std::endl;
+	std::cout << "Lines: " << file.LineCount() << std::endl;
 	std::cout << "Mutations: " << mutations << std::endl;
 	std::cout << "Compile failed: " << compilefailes << std::endl;
 	std::cout << "Test failed: " << testfailes << std::endl;
-	std::cout << "Survived: " << survived << std::endl;
+	std::cout << "Mutations survived: " << survived << std::endl;
 	std::cout << "----------------------" << std::endl;
 	return static_cast<int>(survived);
 }
@@ -158,11 +175,11 @@ bool RunCommand(const char * command)
 }
 
 bool Test() {
-	std::cout << "Testing." << std::endl;
+	std::cout << "Testing..." << std::endl;
 	return RunCommand(testcommand.c_str());
 }
 
 bool Compile() {
-	std::cout << "Compiling." << std::endl;
+	std::cout << "Compiling..." << std::endl;
 	return RunCommand(compilecommand.c_str());
 }

@@ -14,6 +14,7 @@ SourceFile::SourceFile(std::string FilePathToLoad) : FilePath(FilePathToLoad) {
 		throw in.exceptions();
 	}
 	std::string line;
+	linecount = 0;
 	while (getline(in, line))
 	{
 		this->Original.emplace_back(line);
