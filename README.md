@@ -20,6 +20,8 @@ Simple example:
 
 $ dumbmutate --file=FileToTest.cpp --compile=make --test=./test
 
+Results will be shown both in terminal and in MutationResult.html
+
 
 How to build:
 
