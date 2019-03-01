@@ -1,18 +1,19 @@
-const int SecondsToMinutes = (60*1000);
 #include <iostream>
+#include "cxxopts.hpp"
 #include "SourceFile.h"
 #include "HTMLExporter.h"
 #include "MutatorAddSubtr.h"
 #include "MutatorCaret.h"
 #include "MutatorEqual.h"
 #include "MutatorNEqual.h"
-
-#include "cxxopts.hpp"
+#include "MutatorDoubleAddSubtr.h"
+#include "MutatorNumShift.h"
 #include <iostream>
 #include <chrono>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <cmath>
 
 bool Compile();
 
@@ -29,8 +30,6 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 		options
 				.positional_help("[optional args]")
 				.show_positional_help();
-
-		bool apple = false;
 
 		options
 				.allow_unrecognised_options()
@@ -68,57 +67,66 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 
 std::string testcommand;
 std::string compilecommand;
-std::chrono::duration<double> compiletime = std::chrono::duration<double>(600*5);
-std::chrono::duration<double> testtime = std::chrono::duration<double>(600*5);
+//std::chrono::duration<double, std::ratio<1,1>> compiletime = std::chrono::duration<double>(600*5);
+//std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
 int main(int argc, char* argv[])
 {
-	//pipetest();
-	//return 0;
-	auto result = ParseCommandLine(argc, argv);
-	std::string filepath = result["file"].as<std::string>();
-	SourceFile file(filepath);
-	compilecommand = result["compile"].as<std::string>();
-	testcommand = result["test"].as<std::string>();
+	std::string filepath;
+	try {
+		auto result = ParseCommandLine(argc, argv);
+		filepath = result["file"].as<std::string>();
+		compilecommand = result["compile"].as<std::string>();
+		testcommand = result["test"].as<std::string>();
+	} catch (std::exception & e){
+		std::cout << "How to use:" << std::endl;
+		std::cout << R"(dumbmutate --file="filetotest.cpp" --compile="make" --test="./test")" << std::endl;
+		return 1;
+	}
 	auto start = std::chrono::system_clock::now();
-
+	SourceFile file(filepath);
 	if (!Compile()) {
 		std::cerr << "Unmodified compile failed. Fix your program.";
-		exit(1);
+		exit(2);
 	};
 	auto end = std::chrono::system_clock::now();
-	compiletime = end-start;
-	std::cout << "Nominal compile-time: " << compiletime.count() << std::endl;
+//	compiletime = end-start;
+//	std::cout << "Nominal compile-time: " << compiletime.count() << std::endl;
 	start = std::chrono::system_clock::now();
 	if (!Test()) {
 		std::cerr << "Unmodified test failed. Fix your program.";
-		exit(2);
+		exit(3);
 	}
 	end = std::chrono::system_clock::now();
-	testtime = end-start;
-	std::cout << "Nominal test-time: " << testtime.count() << std::endl;
+//	testtime = end-start;
+//	std::cout << "Nominal test-time: " << testtime.count() << std::endl;
 
 	// TODO: More mutations
 	// TODO: Mutations as options.
 
 	size_t mutations = 0, compilefailes = 0, testfailes = 0, survived = 0;
-	std::vector<MutatorBase*> Mutations({new MutatorEqual(), new MutatorAddSubtr(), new MutatorCaret(), new MutatorNEqual});
-	for (int i = 0; i < file.LineCount(); ++i) {
+	std::vector<MutatorBase*> Mutations({new MutatorEqual(), new MutatorAddSubtr(), new MutatorDoubleAddSubtr(), new MutatorCaret(), new MutatorNEqual(), new MutatorNumShift()});
+	for (size_t i = 0; i < file.LineCount(); ++i) {
 		double percentagedone = (double)i/(double)file.LineCount();
-		auto timeelapsed = std::chrono::system_clock::now() - end;
-		double timeelapseds = timeelapsed.count()/(1000.0*1000.0);
-		std::chrono::duration<double> timeremaining = (timeelapsed / percentagedone)-timeelapsed;
-		int timeremainings = (timeelapseds / percentagedone)-timeelapseds;
-		std::cout << std::endl << std::endl << "********************************************" << std::endl;
+		std::chrono::duration<double,std::ratio<1,1>> timeelapsed = std::chrono::system_clock::now() - end;
+		//double timeelapseds = timeelapsed.count()/(1000.0*1000.0);
+		std::chrono::duration<double,std::ratio<1,1>> timeremaining = (timeelapsed / percentagedone)-timeelapsed;
+		//int timeremainings = (timeelapseds / percentagedone)-timeelapseds;
+		std::cout << std::endl << std::endl << "**********************************************" << std::endl;
 		std::cout << "Mutation progress:" << std::endl;
-		std::cout << i << " of " << file.LineCount() << " lines processed in " << (timeelapsed.count() / (1000*1000)) << " seconds." << std::endl;
-		std::cout << "Approximately " << (int)(percentagedone*100) << "% done, " << (timeremainings/(SecondsToMinutes)) << " minutes left." << std::endl;
-		std::cout << "********************************************" << std::endl << std::endl;
+		std::cout << i << " of " << file.LineCount() << " lines processed in " << std::ceil(timeelapsed.count()) << " seconds." << std::endl;
+		std::cout << "Approximately " << (int)(percentagedone*100) << "% done, " << std::ceil(timeremaining.count()/60) << " minutes left." << std::endl;
+		std::cout << "**********************************************" << std::endl << std::endl;
 		const std::string &line = file.GetLine(i);
 		SourceFile::MutationResult result = SourceFile::NoMutation;
 		for (auto &mutator : Mutations) {
 			const size_t mutationsPossible = mutator->CheckMutationsPossible(line);
-			for (int j = 0; j < mutationsPossible && result < SourceFile::MutationResult::Survived; ++j) {
-				file.Modify(i, mutator->MutateLine(line));
+			for (size_t j = 0; j < mutationsPossible && result < SourceFile::MutationResult::Survived; ++j) {
+				std::cout << "Original:" << std::endl;
+				std::cout << i << ": " << line << std::endl;
+				std::cout << "Mutation:" << std::endl;
+				const std::string &mutatedline = mutator->MutateLine(line, j);
+				std::cout << i << ": " << mutatedline << std::endl;
+				file.Modify(i, mutatedline);
 				mutations++;
 				file.WriteModification();
 				if (Compile()) {
@@ -126,6 +134,7 @@ int main(int argc, char* argv[])
 						result = SourceFile::MutationResult::Survived;
 						std::cout << "Survived." << std::endl;
 						survived++;
+						break;
 					} else {
 						testfailes++;
 						std::cout << "Test failed." << std::endl;
@@ -142,6 +151,10 @@ int main(int argc, char* argv[])
 				}
 				file.Revert();
 			}
+			if (result == SourceFile::MutationResult::Survived)
+			{
+				break;
+			}
 		}
 		file.SaveModification(result);
 		HTMLExporter::WriteHTML("./MutationResult.html", file.GetSaved());
@@ -150,16 +163,18 @@ int main(int argc, char* argv[])
 
 	std::cout << std::endl << std::endl;
 	std::cout << "The following mutations survived: " << std::endl;
-	for (int i = 0; i < file.LineCount(); ++i) {
+	for (size_t i = 0; i < file.LineCount(); ++i) {
 		if (file.GetSaved().at(i).second == SourceFile::MutationResult::Survived)
 		{
-			std::cout << filepath << ":" << (i+1) << ":1 " << file.GetSaved().at(i).first << std::endl;
+			std::cout << filepath << ":" << (i+1) << " " << file.GetSaved().at(i).first << std::endl;
 		}
 	}
-	
+
+	std::chrono::duration<double,std::ratio<1,1>> totaltime = std::chrono::system_clock::now()-end;
+
 	std::cout << std::endl << std::endl;
 	std::cout << "----------------------" << std::endl;
-	std::cout << "Time: " << (int)((std::chrono::system_clock::now()-end).count()/(1000*1000*1000*60)) << " minutes" << std::endl;
+	std::cout << "Time: " << (int)totaltime.count()/60 << " minutes" << std::endl;
 	std::cout << "Lines: " << file.LineCount() << std::endl;
 	std::cout << "Mutations: " << mutations << std::endl;
 	std::cout << "Compile failed: " << compilefailes << std::endl;
