@@ -16,8 +16,7 @@ std::string MutatorNumShift::MutateLine(const std::string &line, size_t mutation
 			if (occurencies == mutationnr)
 			{
 				std::string rtrn = line;
-				char * end;
-				return rtrn.replace(line.find(nr),1,std::to_string(NumShift(std::strtol(nr.c_str(),&end, 1))).c_str());
+				return rtrn.replace(line.find(nr),1,std::to_string(NumShift(std::atoi(nr.c_str()))).c_str()); // NOLINT(cert-err34-c)
 			}
 			occurencies++;
 		}

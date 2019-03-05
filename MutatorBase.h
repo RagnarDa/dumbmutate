@@ -11,6 +11,7 @@ class MutatorBase {
 public:
 	virtual size_t CheckMutationsPossible(const std::string &line) = 0;
 	virtual std::string MutateLine(const std::string &line, size_t mutationnr) = 0;
+	virtual ~MutatorBase() = default;
 
 protected:
 	static size_t CountOccurences(std::string StringToSearch, std::string TargetString);
