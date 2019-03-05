@@ -16,6 +16,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <cmath>
+#include <cassert>
 
 bool Compile();
 
