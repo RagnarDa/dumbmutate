@@ -7,7 +7,7 @@
 
 #include "MutatorBase.h"
 
-class MutatorDoubleAddSubtr : public MutatorBase{
+class MutatorIncrDecr : public MutatorBase{
 public:
 	size_t CheckMutationsPossible(const std::string &line) override;
 	std::string MutateLine(const std::string &line, size_t mutationnr) override;

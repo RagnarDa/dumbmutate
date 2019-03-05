@@ -6,9 +6,10 @@
 #include "MutatorCaret.h"
 #include "MutatorEqual.h"
 #include "MutatorNEqual.h"
-#include "MutatorDoubleAddSubtr.h"
+#include "MutatorIncrDecr.h"
 #include "MutatorNumShift.h"
 #include "MutatorAndOr.h"
+#include "MutatorTrueFalse.h"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -68,10 +69,11 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 
 std::string testcommand;
 std::string compilecommand;
-//std::chrono::duration<double, std::ratio<1,1>> compiletime = std::chrono::duration<double>(600*5);
-//std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
 int main(int argc, char* argv[])
 {
+	std::chrono::duration<double, std::ratio<1,1>> compiletime = std::chrono::duration<double>(600*5);
+	std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
+
 	std::string filepath;
 	try {
 		auto result = ParseCommandLine(argc, argv);
@@ -90,16 +92,16 @@ int main(int argc, char* argv[])
 		exit(2);
 	};
 	auto end = std::chrono::system_clock::now();
-//	compiletime = end-start;
-//	std::cout << "Nominal compile-time: " << compiletime.count() << std::endl;
+	compiletime = end-start;
+	std::cout << "Nominal compile-time: " << compiletime.count() << std::endl;
 	start = std::chrono::system_clock::now();
 	if (!Test()) {
 		std::cerr << "Unmodified test failed. Fix your program.";
 		exit(3);
 	}
 	end = std::chrono::system_clock::now();
-//	testtime = end-start;
-//	std::cout << "Nominal test-time: " << testtime.count() << std::endl;
+	testtime = end-start;
+	std::cout << "Nominal test-time: " << testtime.count() << std::endl;
 
 	// TODO: More mutations
 	// TODO: Mutations as options.
@@ -109,18 +111,17 @@ int main(int argc, char* argv[])
 	std::vector<MutatorBase*> Mutations({
 		  new MutatorEqual()
 		, new MutatorAddSubtr()
-		, new MutatorDoubleAddSubtr()
+		, new MutatorIncrDecr()
 		, new MutatorCaret()
 		, new MutatorNEqual()
 		, new MutatorNumShift()
-		, new MutatorAndOr()});
+		, new MutatorAndOr()
+		, new MutatorTrueFalse()});
 
 	for (size_t i = 0; i < file.LineCount(); ++i) {
 		double percentagedone = (double)i/(double)file.LineCount();
 		std::chrono::duration<double,std::ratio<1,1>> timeelapsed = std::chrono::system_clock::now() - end;
-		//double timeelapseds = timeelapsed.count()/(1000.0*1000.0);
 		std::chrono::duration<double,std::ratio<1,1>> timeremaining = (timeelapsed / percentagedone)-timeelapsed;
-		//int timeremainings = (timeelapseds / percentagedone)-timeelapseds;
 		std::cout << std::endl << std::endl << "**********************************************" << std::endl;
 		std::cout << "Mutation progress:" << std::endl;
 		std::cout << i << " of " << file.LineCount() << " lines processed in " << std::ceil(timeelapsed.count()) << " seconds." << std::endl;
@@ -143,14 +144,15 @@ int main(int argc, char* argv[])
 				if (Compile()) {
 					if (Test()) {
 						result = SourceFile::MutationResult::Survived;
+						file.SaveModification(result);
 						std::cout << "Survived." << std::endl;
 						survived++;
-						break;
 					} else {
 						testfailes++;
 						std::cout << "Test failed." << std::endl;
 						if (result < SourceFile::MutationResult::FailedTest) {
 							result = SourceFile::MutationResult::FailedTest;
+							file.SaveModification(result);
 						}
 					}
 				} else {
@@ -158,17 +160,13 @@ int main(int argc, char* argv[])
 					std::cout << "Compile failed." << std::endl;
 					if (result < SourceFile::MutationResult::FailedCompile) {
 						result = SourceFile::MutationResult::FailedCompile;
+						file.SaveModification(result);
 					}
 				}
 				file.Revert();
 			}
-			if (result == SourceFile::MutationResult::Survived)
-			{
-				break;
-			}
 		}
 		if (result != SourceFile::MutationResult::NoMutation) {
-			file.SaveModification(result);
 			HTMLExporter::WriteHTML("./MutationResult.html", file.GetSaved());
 			file.Revert();
 		};
