@@ -25,7 +25,7 @@ bool Compile();
 bool Test();
 
 std::stringstream
-Summary(std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<long long, std::ratio<1, 1000000>>> timepoint_start,
+Summary(std::chrono::time_point<std::chrono::system_clock> timepoint_start,
         size_t linesdone, size_t linestotal, size_t mutations, size_t compilefailes, size_t testfailes,
         size_t survived);
 
@@ -216,7 +216,7 @@ int main(int argc, char* argv[])
 }
 
 std::stringstream
-Summary(const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<long long, std::ratio<1, 1000000>>> timepoint_start,
+Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start,
         size_t linesdone, size_t linestotal, size_t mutations, size_t compilefailes, size_t testfailes,
         size_t survived) {
 	std::chrono::duration<double, std::ratio<1,1>> totaltime = std::chrono::system_clock::now() - timepoint_start;
