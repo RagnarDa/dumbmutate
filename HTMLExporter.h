@@ -10,8 +10,8 @@
 
 class HTMLExporter {
 public:
-	static void WriteHTML(std::string HTMLFileName,
-		                     std::vector<std::pair<std::string, SourceFile::MutationResult>> Results);
+	static void WriteHTML(std::string HTMLFileName, std::vector<std::pair<std::string, SourceFile::MutationResult>> Results,
+		                     std::string Summary);
 };
 
 

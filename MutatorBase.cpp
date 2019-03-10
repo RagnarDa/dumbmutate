@@ -32,9 +32,9 @@ MutatorBase::DuoMutation(const std::string &line, size_t mutationnr, std::string
 	std::string rtrn = line;
 	if (mutationnr < LeftOccurencies)
 	{
-		return rtrn.replace(GetOccurence(line, LeftSymbol, mutationnr), RightSymbol.size(), RightSymbol);
+		return rtrn.replace(GetOccurence(line, LeftSymbol, mutationnr), LeftSymbol.size(), RightSymbol);
 	} else {
-		return rtrn.replace(GetOccurence(line, RightSymbol, mutationnr - LeftOccurencies), LeftSymbol.size(), LeftSymbol);
+		return rtrn.replace(GetOccurence(line, RightSymbol, mutationnr - LeftOccurencies), RightSymbol.size(), LeftSymbol);
 	}
 }
 

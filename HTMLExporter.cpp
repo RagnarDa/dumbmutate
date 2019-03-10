@@ -1,3 +1,7 @@
+#include <utility>
+
+#include <utility>
+
 //
 // Created by Christoffer Wärnbring on 2019-02-24.
 //
@@ -6,29 +10,19 @@
 #include <fstream>
 #include <string>
 #include "HTMLExporter.h"
+#include "Utility.h"
 
-
-std::string ReplaceAll(std::string Original, std::string ToReplace, std::string ReplaceWith)
-{
-	std::string Copy = Original;
-	auto pos = Copy.find(ToReplace);
-	while (Copy.size() > pos) {
-		Copy.replace(pos, ToReplace.size(), ReplaceWith);
-		pos = Copy.find(ToReplace,pos+1);
-	}
-	return Copy;
-}
 
 std::string Sanitize(std::string Original)
 {
-	return ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(Original,"&", "&#38;"), ">", "&#62;"), "\"", "&#34;"), "<","&#60;");
+	return ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(std::move(Original),"&", "&#38;"), ">", "&#62;"), "\"", "&#34;"), "<","&#60;"), "\n", "<br>");
 }
 
-void HTMLExporter::WriteHTML(std::string HTMLFileName,
-                            std::vector<std::pair<std::string, SourceFile::MutationResult>> Results) {
+void HTMLExporter::WriteHTML(std::string HTMLFileName, std::vector<std::pair<std::string, SourceFile::MutationResult>> Results,
+                            std::string Summary) {
 	std::ofstream out(HTMLFileName);
 	out << "<html><body>" << std::endl;
-
+	out << Sanitize(std::move(Summary)) << std::endl;
 	for (unsigned int linenr = 0; linenr < Results.size(); ++linenr)
 	{
 		//<span><p style="background-color: red; margin-top: 0.0em; margin-bottom: 0em;">code</p></span>
@@ -59,7 +53,6 @@ void HTMLExporter::WriteHTML(std::string HTMLFileName,
 		}
 		out << "; margin-top: 0.0em; margin-bottom: 0em;\">" << linenr << "\t";
 		out << Sanitize(Results.at(linenr).first);
-		//out << Results.at(linenr).first;
 		out << "</p></pre>" << std::endl;
 	}
 	out.close();
