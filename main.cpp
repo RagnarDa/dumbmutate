@@ -25,7 +25,7 @@ bool Compile();
 bool Test();
 
 std::stringstream
-Summary(std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<long long, std::ratio<1, 1000000>>> timepoint_start,
+Summary(std::chrono::time_point<std::chrono::system_clock> timepoint_start,
         size_t linesdone, size_t linestotal, size_t mutations, size_t compilefailes, size_t testfailes,
         size_t survived);
 
@@ -216,11 +216,11 @@ int main(int argc, char* argv[])
 }
 
 std::stringstream
-Summary(const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<long long, std::ratio<1, 1000000>>> timepoint_start,
+Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start,
         size_t linesdone, size_t linestotal, size_t mutations, size_t compilefailes, size_t testfailes,
         size_t survived) {
-	std::__1::chrono::duration<double, std::__1::ratio<1,1>> totaltime = std::__1::chrono::system_clock::now() - timepoint_start;
-	std::__1::stringstream s;
+	std::chrono::duration<double, std::ratio<1,1>> totaltime = std::chrono::system_clock::now() - timepoint_start;
+	std::stringstream s;
 	std::time_t timev = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	size_t killratio = KillRatioPerc(testfailes, survived);
 	s << "\n" << "\n";
