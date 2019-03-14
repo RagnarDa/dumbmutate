@@ -144,50 +144,56 @@ int main(int argc, char* argv[])
 		std::cout << "**********************************************" << std::endl << std::endl;
 		const std::string &line = file.GetLine(i);
 		SourceFile::MutationResult result = SourceFile::NoMutation;
-		for (auto &mutator : Mutations) {
-			const size_t mutationsPossible = mutator->CheckMutationsPossible(line);
-			for (size_t j = 0; j < mutationsPossible && result < SourceFile::MutationResult::Survived; ++j) {
-				std::cout << "Original:" << std::endl;
-				std::cout << i << ": " << line << std::endl;
-				std::cout << "Mutation:" << std::endl;
-				const std::string &mutatedline = mutator->MutateLine(line, j);
-				std::cout << i << ": " << mutatedline << std::endl;
-				assert(line != mutatedline);
-				file.Modify(i, mutatedline);
-				mutations++;
-				file.WriteModification();
-				if (Compile()) {
-					if (Test()) {
-						result = SourceFile::MutationResult::Survived;
-						file.SaveModification(result);
-						std::cout << "Survived." << std::endl;
-						survived++;
+		if (!file.GetIsMultilineComment(i)) {
+			for (auto &mutator : Mutations) {
+				const size_t mutationsPossible = mutator->CheckMutationsPossible(line);
+				for (size_t j = 0; j < mutationsPossible/* && result < SourceFile::MutationResult::Survived*/; ++j) {
+					std::cout << "Original:" << std::endl;
+					std::cout << i << ": " << line << std::endl;
+					std::cout << "Mutation:" << std::endl;
+					const std::string &mutatedline = mutator->MutateLine(line, j);
+					std::cout << i << ": " << mutatedline << std::endl;
+					assert(line != mutatedline);
+					file.Modify(i, mutatedline);
+					mutations++;
+					file.WriteModification();
+					if (Compile()) {
+						if (Test()) {
+							result = SourceFile::MutationResult::Survived;
+							file.SaveModification(result);
+							std::cout << "Survived." << std::endl;
+							survived++;
+						} else {
+							testfailes++;
+							std::cout << "Test failed." << std::endl;
+							if (result < SourceFile::MutationResult::FailedTest) {
+								result = SourceFile::MutationResult::FailedTest;
+								file.SaveModification(result);
+							}
+						}
 					} else {
-						testfailes++;
-						std::cout << "Test failed." << std::endl;
-						if (result < SourceFile::MutationResult::FailedTest) {
-							result = SourceFile::MutationResult::FailedTest;
+						compilefailes++;
+						std::cout << "Compile failed." << std::endl;
+						if (result < SourceFile::MutationResult::FailedCompile) {
+							result = SourceFile::MutationResult::FailedCompile;
 							file.SaveModification(result);
 						}
 					}
-				} else {
-					compilefailes++;
-					std::cout << "Compile failed." << std::endl;
-					if (result < SourceFile::MutationResult::FailedCompile) {
-						result = SourceFile::MutationResult::FailedCompile;
-						file.SaveModification(result);
-					}
+					file.Revert();
 				}
-				file.Revert();
 			}
+			if (result != SourceFile::MutationResult::NoMutation) {
+				HTMLExporter::WriteHTML(HTMLFileName, file.GetSaved(), Summary(end,
+				                                                               i + 1, file.LineCount(), mutations,
+				                                                               compilefailes, testfailes,
+				                                                               survived).str());
+				file.Revert();
+			};
+		} else {
+			std::cout << line << std::endl;
+			std::cout << "Multiline comment, ignoring." << std::endl;
+
 		}
-		if (result != SourceFile::MutationResult::NoMutation) {
-			HTMLExporter::WriteHTML(HTMLFileName, file.GetSaved(), Summary(end,
-			                                                                          i+1, file.LineCount(), mutations,
-			                                                               compilefailes, testfailes,
-			                                                               survived).str());
-			file.Revert();
-		};
 	}
 	HTMLExporter::WriteHTML(HTMLFileName, file.GetSaved(), Summary(end,
 	                                                               file.LineCount(), file.LineCount(), mutations,
@@ -239,7 +245,7 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
 
 size_t KillRatioPerc(size_t testfailes, size_t survived) {
 	size_t killratio = 0;
-	if  (testfailes > 0) {
+	if  ((signed int)((signed int)testfailes - (signed int) survived) > (signed int) 0) {
 		killratio = static_cast<size_t>(100.0f * (((testfailes-survived) * 100.0f) / (testfailes * 100.0f)));
 	}
 	return killratio;

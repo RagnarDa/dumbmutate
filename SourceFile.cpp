@@ -1,3 +1,5 @@
+#include <utility>
+
 //
 // Created by Christoffer Wärnbring on 2019-02-23.
 //
@@ -7,20 +9,34 @@
 #include <iostream>
 #include <cassert>
 
-SourceFile::SourceFile(std::string FilePathToLoad) : FilePath(FilePathToLoad) {
+SourceFile::SourceFile(std::string FilePathToLoad) : FilePath(std::move(FilePathToLoad)) {
 	std::ifstream in(FilePath);
 	if (!in)
 	{
 		std::cerr << "Couldn't load the specified source file: " << FilePath << std::endl;
-		throw in.exceptions();
+		throw std::exception();
 	}
 	std::string line;
 	linecount = 0;
+	bool ismultilinecomment = false;
 	while (getline(in, line))
 	{
 		this->Original.emplace_back(line);
 		this->Saved.emplace_back(std::pair<std::string, MutationResult>(line, NoMutation));
 		linecount++;
+		if (line.find("/*") != std::string::npos &&
+				((line.find("*/") == std::string::npos)
+			|| (line.find("/*") > line.find("*/") && line.find("*/") != std::string::npos)))
+		{
+			ismultilinecomment = true;
+			this->IsMultiLineComment.push_back(true);
+		} else if (line.find("*/") != std::string::npos)
+		{
+			ismultilinecomment = false;
+			this->IsMultiLineComment.push_back(true);
+		} else {
+			this->IsMultiLineComment.push_back(ismultilinecomment);
+		}
 	}
 	this->Revert();
 }

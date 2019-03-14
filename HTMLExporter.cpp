@@ -15,7 +15,7 @@
 
 std::string Sanitize(std::string Original)
 {
-	return ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(std::move(Original),"&", "&#38;"), ">", "&#62;"), "\"", "&#34;"), "<","&#60;"), "\n", "<br>");
+	return ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(std::move(Original),"&", "&#38;"), ">", "&#62;"), "\"", "&#34;"), "<","&#60;"), "\n", "<br>"), "\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
 }
 
 void HTMLExporter::WriteHTML(std::string HTMLFileName, std::vector<std::pair<std::string, SourceFile::MutationResult>> Results,
