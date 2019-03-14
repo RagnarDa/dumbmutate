@@ -16,7 +16,7 @@ std::string MutatorNumShift::MutateLine(const std::string &line, size_t mutation
 			if (occurencies == mutationnr)
 			{
 				std::string rtrn = line;
-				return rtrn.replace(line.find(nr),1,std::to_string(NumShift(std::atoi(nr.c_str()))).c_str()); // NOLINT(cert-err34-c)
+				return rtrn.replace(SearchString(line,nr,0),1,std::to_string(NumShift(std::atoi(nr.c_str()))).c_str()); // NOLINT(cert-err34-c)
 			}
 			occurencies++;
 		}
@@ -28,7 +28,7 @@ size_t MutatorNumShift::CheckMutationsPossible(const std::string &line) {
 	size_t occurencies = 0;
 	for (const auto & nr : numbers)
 	{
-		if (line.find(nr) != std::string::npos)
+		if (SearchString(line,nr,0) != std::string::npos)
 		{
 			occurencies++;
 		}

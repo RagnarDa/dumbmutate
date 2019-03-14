@@ -8,17 +8,28 @@
 size_t MutatorBase::CountOccurences(std::string StringToSearch, std::string TargetString) {
 	int occurrences = 0;
 	std::string::size_type pos = 0;
-	while ((pos = StringToSearch.find(TargetString, pos )) != std::string::npos) {
+	while ((pos = SearchString(StringToSearch, TargetString, pos)) != std::string::npos) {
 		++occurrences;
 		pos += TargetString.length();
 	}
 	return occurrences;
 }
 
+unsigned long
+MutatorBase::SearchString(const std::string &StringToSearch, const std::string &TargetString, unsigned long pos)
+{
+	unsigned long rtrn = StringToSearch.find(TargetString, pos );
+	if (StringToSearch.find("//") != std::string::npos
+	&& StringToSearch.find("//") < rtrn)
+		return std::string::npos;
+	else
+		return rtrn;
+}
+
 size_t MutatorBase::GetOccurence(std::string StringToSearch, std::string TargetString, size_t Occurence) {
 	size_t occurrences = 0;
 	std::string::size_type pos = 0;
-	while ((pos = StringToSearch.find(TargetString, pos )) != std::string::npos
+	while ((pos = SearchString(StringToSearch, TargetString, pos)) != std::string::npos
 	&& occurrences < Occurence) {
 		++occurrences;
 		pos += TargetString.length();
