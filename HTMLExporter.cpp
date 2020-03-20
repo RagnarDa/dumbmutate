@@ -18,9 +18,15 @@ std::string Sanitize(std::string Original)
 	return ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(std::move(Original),"&", "&#38;"), ">", "&#62;"), "\"", "&#34;"), "<","&#60;"), "\n", "<br>"), "\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
 }
 
-void HTMLExporter::WriteHTML(std::string HTMLFileName, std::vector<std::pair<std::string, SourceFile::MutationResult>> Results,
+void HTMLExporter::WriteHTML(const std::string& HTMLFileName, std::vector<std::pair<std::string, SourceFile::MutationResult>> Results,
                             std::string Summary) {
 	std::ofstream out(HTMLFileName);
+	if (!out.is_open()) {
+		std::cerr << "Can't write to file " << HTMLFileName << std::endl;
+		out.close();
+		return;
+//		throw FileError("Failed to open file \"" + name + "\"");
+	}
 	out << "<html><body>" << std::endl;
 	out << Sanitize(std::move(Summary)) << std::endl;
 	for (unsigned int linenr = 0; linenr < Results.size(); ++linenr)

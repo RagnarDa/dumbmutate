@@ -44,7 +44,7 @@ SourceFile::SourceFile(std::string FilePathToLoad) : FilePath(std::move(FilePath
 void SourceFile::Revert() {
 	this->Modified.clear();
 	assert(this->Modified.empty());
-	for (auto line : this->Original)
+	for (const auto& line : this->Original)
 	{
 		this->Modified.emplace_back(line);
 	}
@@ -69,6 +69,12 @@ void SourceFile::WriteOriginal() {
 
 void SourceFile::WriteFile(std::vector<std::string> &vector) const {
 	std::ofstream out(FilePath);
+	if (!out.is_open()) {
+		std::cerr << "Can't write to file " << FilePath << std::endl;
+		out.close();
+		return;
+//		throw FileError("Failed to open file \"" + name + "\"");
+	}
 	for (const auto &line : vector)
 	{
 		out << line << std::endl;
