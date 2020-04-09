@@ -244,10 +244,8 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
 }
 
 size_t KillRatioPerc(size_t testfailes, size_t survived) {
-	size_t killratio = 0;
-	if  ((signed int)((signed int)testfailes - (signed int) survived) > (signed int) 0) {
-		killratio = static_cast<size_t>(100.0f * (((testfailes-survived) * 100.0f) / (testfailes * 100.0f)));
-	}
+    size_t total = testfailes + survived;
+    size_t killratio = (testfailes * 100) / total;
 	return killratio;
 }
 
