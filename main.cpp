@@ -51,6 +51,8 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 						("t, test", "Test command", cxxopts::value<std::string>()
 						        ->default_value("./test"))
 						("k, threshold", "Killratio threshold (%)", cxxopts::value<size_t>()->default_value("0"), "N")
+                        ("s, start", "Starting line", cxxopts::value<int>()->default_value("1"),"N")
+                        ("e, end", "Ending line", cxxopts::value<int>()->default_value("-1"),"N")
 						/*("positional",
 						 "Positional arguments: these are the arguments that are entered "
 						 "without an option", cxxopts::value<std::vector<std::string>>())
@@ -85,6 +87,8 @@ int main(int argc, char* argv[])
 	std::chrono::duration<double, std::ratio<1,1>> compiletime = std::chrono::duration<double>(600*5);
 	std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
 	size_t threshold = 0;
+	int startingline = 0;
+	int endingline = -1;
 	std::string filepath;
 	try {
 		auto result = ParseCommandLine(argc, argv);
@@ -92,6 +96,8 @@ int main(int argc, char* argv[])
 		compilecommand = result["compile"].as<std::string>();
 		testcommand = result["test"].as<std::string>();
 		threshold = result["threshold"].as<size_t>();
+		startingline = result["start"].as<int>() - 1;
+		endingline = result["end"].as<int>() - 1;
 	} catch (std::exception & e){
 		std::cout << "How to use:" << std::endl;
 		std::cout << R"(dumbmutate --file="filetotest.cpp" --compile="make" --test="./test")" << std::endl;
@@ -133,39 +139,54 @@ int main(int argc, char* argv[])
 		, new MutatorTrueFalse()});
 
 	std::string HTMLFileName = std::string("./MutationResult_" + ReplaceAll(ReplaceAll(filepath,"/","_"),"\\","_") + ".html");
-	for (size_t i = 0; i < file.LineCount(); ++i) {
-		double percentagedone = (double)i/(double)file.LineCount();
+	if (endingline < 0)
+    {
+	    endingline = (int)file.LineCount();
+    } else if (endingline > (int)file.LineCount())
+    {
+	    std::cerr << "Ending line past end of file." << std::endl;
+	    exit(4);
+    } else if (startingline > (int)file.LineCount())
+    {
+	    std::cerr << "Starting line past end of file." << std::endl;;
+	    exit(5);
+    }
+	size_t linecount = endingline-startingline;
+	for (size_t i = 0; i < linecount; ++i) {
+		double percentagedone = (double)i/(double)linecount;
 		std::chrono::duration<double,std::ratio<1,1>> timeelapsed = std::chrono::system_clock::now() - end;
+		// Approximately 1.87 second per line on my comp. Maybe mix in this in the estimate?
 		std::chrono::duration<double,std::ratio<1,1>> timeremaining = (timeelapsed / percentagedone)-timeelapsed;
 		std::cout << std::endl << std::endl << "**********************************************" << std::endl;
 		std::cout << "Mutation progress:" << std::endl;
-		std::cout << i << " of " << file.LineCount() << " lines processed in " << std::ceil(timeelapsed.count()) << " seconds." << std::endl;
+		std::cout << i << " of " << linecount << " lines processed in " << std::ceil(timeelapsed.count()) << " seconds." << std::endl;
 		std::cout << "Approximately " << (int)(percentagedone*100) << "% done, " << std::ceil(timeremaining.count()/60) << " minutes left." << std::endl;
 		std::cout << "**********************************************" << std::endl << std::endl;
-		const std::string &line = file.GetLine(i);
+		size_t lineinfile = i+startingline;
+		const std::string &line = file.GetLine(lineinfile);
 		SourceFile::MutationResult result = SourceFile::NoMutation;
 		if (!file.GetIsMultilineComment(i)) {
 			for (auto &mutator : Mutations) {
 				const size_t mutationsPossible = mutator->CheckMutationsPossible(line);
 				for (size_t j = 0; j < mutationsPossible/* && result < SourceFile::MutationResult::Survived*/; ++j) {
 					std::cout << "Original:" << std::endl;
-					std::cout << i << ": " << line << std::endl;
+					std::cout << lineinfile << ": " << line << std::endl;
 					std::cout << "Mutation:" << std::endl;
 					const std::string &mutatedline = mutator->MutateLine(line, j);
-					std::cout << i << ": " << mutatedline << std::endl;
+					std::cout << lineinfile << ": " << mutatedline << std::endl;
 					assert(line != mutatedline);
-					file.Modify(i, mutatedline);
+					file.Modify(i+startingline, mutatedline);
 					mutations++;
 					file.WriteModification();
 					if (Compile()) {
 						if (Test()) {
 							result = SourceFile::MutationResult::Survived;
 							file.SaveModification(result);
-							std::cout << "Survived." << std::endl;
+							std::cout << "Mutation survived." << std::endl;
 							survived++;
 						} else {
 							testfailes++;
-							std::cout << "Test failed." << std::endl;
+							std::cout << "Mutation killed." << std::endl;
 							if (result < SourceFile::MutationResult::FailedTest) {
 								result = SourceFile::MutationResult::FailedTest;
 								file.SaveModification(result);
@@ -184,7 +205,7 @@ int main(int argc, char* argv[])
 			}
 			if (result != SourceFile::MutationResult::NoMutation) {
 				HTMLExporter::WriteHTML(HTMLFileName, file.GetSaved(), Summary(end,
-				                                                               i + 1, file.LineCount(), mutations,
+				                                                               lineinfile + 1, endingline, mutations,
 				                                                               compilefailes, testfailes,
 				                                                               survived).str());
 				file.Revert();
@@ -196,7 +217,7 @@ int main(int argc, char* argv[])
 		}
 	}
 	HTMLExporter::WriteHTML(HTMLFileName, file.GetSaved(), Summary(end,
-	                                                               file.LineCount(), file.LineCount(), mutations,
+	                                                               linecount, linecount, mutations,
 	                                                               compilefailes, testfailes,
 	                                                               survived).str());
 	std::cout << std::endl << std::endl;
@@ -208,7 +229,7 @@ int main(int argc, char* argv[])
 		}
 	}
 	std::cout << Summary(end,
-	                     file.LineCount(), file.LineCount(), mutations, compilefailes, testfailes, survived).str();
+	                     endingline, endingline, mutations, compilefailes, testfailes, survived).str();
 
 	for (auto &Mutation : Mutations) {
 		delete Mutation;
@@ -245,6 +266,8 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
 
 size_t KillRatioPerc(size_t testfailes, size_t survived) {
     size_t total = testfailes + survived;
+    if (total == 0)
+        return 0;
     size_t killratio = (testfailes * 100) / total;
 	return killratio;
 }
