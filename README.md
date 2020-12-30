@@ -14,6 +14,7 @@ any compiler.
 go-to-code directly in your IDE.
 - Gives progress updates while running so you can tell how long left to finish the file
 (in minutes).
+- Ability to mutate only part of file, i e from line 10 to line 20.
 
 
 Simple example:
@@ -49,3 +50,8 @@ $ dumbmutate --file=FileToTest.cpp --compile="timeout 30 make" --test="timeout 3
 Run with timeout 30 seconds (Mac):
 
 $ dumbmutate --file=FileToTest.cpp --compile="gtimeout 30 make" --test="gtimeout 30 ./test"
+
+
+Test specific part of FileToTest.cpp, line 10 to 20:
+
+$ dumbmutate --file=FileToTest.cpp --compile="make" --test="./test" --start=10 --end=20
