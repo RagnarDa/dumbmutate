@@ -38,7 +38,7 @@ needs to figure out how to do this on Windows).
 
 Recommendation for Mac (requires homebrew):
 
-$ brew install timeout
+$ brew install coreutils
 
 
 Run with timeout 30 seconds (Linux):
