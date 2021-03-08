@@ -19,7 +19,7 @@ go-to-code directly in your IDE.
 
 Simple example:
 
-$ dumbmutate --file=FileToTest.cpp --compile=make --test=./test
+$ dumbmutate --mutate=FileToMutate.cpp --build=make --test=./test
 
 Results will be shown both in terminal and in MutationResult.html
 
@@ -44,14 +44,14 @@ $ brew install coreutils
 
 Run with timeout 30 seconds (Linux):
 
-$ dumbmutate --file=FileToTest.cpp --compile="timeout 30 make" --test="timeout 30 ./test"
+$ dumbmutate --mutate=FileToTest.cpp --build="timeout 30 make" --test="timeout 30 ./test"
 
 
 Run with timeout 30 seconds (Mac):
 
-$ dumbmutate --file=FileToTest.cpp --compile="gtimeout 30 make" --test="gtimeout 30 ./test"
+$ dumbmutate --mutate=FileToTest.cpp --build="gtimeout 30 make" --test="gtimeout 30 ./test"
 
 
 Test specific part of FileToTest.cpp, line 10 to 20:
 
-$ dumbmutate --file=FileToTest.cpp --compile="make" --test="./test" --start=10 --end=20
+$ dumbmutate --mutate=FileToTest.cpp --build="make" --test="./test" --start=10 --end=20

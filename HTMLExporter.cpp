@@ -41,7 +41,7 @@ void HTMLExporter::WriteHTML(const std::string& HTMLFileName, std::vector<std::p
 				out << "white";
 			}
 			break;
-			case SourceFile::FailedCompile:
+			case SourceFile::FailedBuild:
 			{
 				out << "yellow";
 			}

@@ -20,13 +20,13 @@
 #include <cmath>
 #include <cassert>
 
-bool Compile();
+bool Build();
 
 bool Test();
 
 std::stringstream
 Summary(std::chrono::time_point<std::chrono::system_clock> timepoint_start,
-        size_t linesdone, size_t linestotal, size_t mutations, size_t compilefailes, size_t testfailes,
+        size_t linesdone, size_t linestotal, size_t mutations, size_t buildfailes, size_t testfailes,
         size_t survived);
 
 size_t KillRatioPerc(size_t testfailes, size_t survived);
@@ -46,8 +46,8 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 		options
 				.allow_unrecognised_options()
 				.add_options()
-						("f, file", "File to mutate", cxxopts::value<std::string>(), "FILE")
-						("c, compile", "Compile command", cxxopts::value<std::string>()->default_value("make"))
+						("m, mutate", "File to mutate", cxxopts::value<std::string>(), "FILE")
+						("b, build", "Build command", cxxopts::value<std::string>()->default_value("make"))
 						("t, test", "Test command", cxxopts::value<std::string>()
 						        ->default_value("./test"))
 						("k, threshold", "Killratio threshold (%)", cxxopts::value<size_t>()->default_value("0"), "N")
@@ -81,10 +81,10 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 }
 
 std::string testcommand;
-std::string compilecommand;
+std::string buildcommand;
 int main(int argc, char* argv[])
 {
-	std::chrono::duration<double, std::ratio<1,1>> compiletime = std::chrono::duration<double>(600*5);
+	std::chrono::duration<double, std::ratio<1,1>> buildtime = std::chrono::duration<double>(600 * 5);
 	std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
 	size_t threshold = 0;
 	int startingline = 0;
@@ -92,29 +92,31 @@ int main(int argc, char* argv[])
 	std::string filepath;
 	try {
 		auto result = ParseCommandLine(argc, argv);
-		filepath = result["file"].as<std::string>();
-		compilecommand = result["compile"].as<std::string>();
+		filepath = result["mutate"].as<std::string>();
+        buildcommand = result["build"].as<std::string>();
 		testcommand = result["test"].as<std::string>();
 		threshold = result["threshold"].as<size_t>();
 		startingline = result["start"].as<int>() - 1;
 		endingline = result["end"].as<int>() - 1;
 	} catch (std::exception & e){
 		std::cout << "How to use:" << std::endl;
-		std::cout << R"(dumbmutate --file="filetotest.cpp" --compile="make" --test="./test")" << std::endl;
+		std::cout << R"(dumbmutate --mutate="filetotest.cpp" --build="make" --test="./test")" << std::endl;
 		std::cout << "Optionally for a 80% killratio threshold:" << std::endl;
-		std::cout << R"(dumbmutate --file="filetotest.cpp" --compile="make" --test="./test --threshold=80")" << std::endl;
+		std::cout << R"(dumbmutate --mutate="filetotest.cpp" --build="make" --test="./test --threshold=80")" << std::endl;
+        std::cout << "Optionally for mutating lines 80 to 110 of file:" << std::endl;
+        std::cout << R"(dumbmutate --mutate="filetotest.cpp" --build="make" --test="./test --start=80 --end=110")" << std::endl;
 
 		return 1;
 	}
 	auto start = std::chrono::system_clock::now();
 	SourceFile file(filepath);
-	if (!Compile()) {
-		std::cerr << "Unmodified compile failed. Fix your program.";
+	if (!Build()) {
+		std::cerr << "Unmodified build failed. Fix your program.";
 		exit(2);
 	};
 	auto end = std::chrono::system_clock::now();
-	compiletime = end-start;
-	std::cout << "Nominal compile-time: " << compiletime.count() << std::endl;
+    buildtime = end - start;
+	std::cout << "Nominal build-time: " << buildtime.count() << std::endl;
 	start = std::chrono::system_clock::now();
 	if (!Test()) {
 		std::cerr << "Unmodified test failed. Fix your program.";
@@ -126,7 +128,7 @@ int main(int argc, char* argv[])
 
 	// TODO: Mutations as options.
 
-	size_t mutations = 0, compilefailes = 0, testfailes = 0, survived = 0;
+	size_t mutations = 0, buildfailes = 0, testfailes = 0, survived = 0;
 
 	std::vector<MutatorBase*> Mutations({
 		  new MutatorEqual()
@@ -178,7 +180,7 @@ int main(int argc, char* argv[])
 					file.Modify(i+startingline, mutatedline);
 					mutations++;
 					file.WriteModification();
-					if (Compile()) {
+					if (Build()) {
 						if (Test()) {
 							result = SourceFile::MutationResult::Survived;
 							file.SaveModification(result);
@@ -193,10 +195,10 @@ int main(int argc, char* argv[])
 							}
 						}
 					} else {
-						compilefailes++;
-						std::cout << "Compile failed." << std::endl;
-						if (result < SourceFile::MutationResult::FailedCompile) {
-							result = SourceFile::MutationResult::FailedCompile;
+						buildfailes++;
+						std::cout << "Build failed." << std::endl;
+						if (result < SourceFile::MutationResult::FailedBuild) {
+							result = SourceFile::MutationResult::FailedBuild;
 							file.SaveModification(result);
 						}
 					}
@@ -206,8 +208,8 @@ int main(int argc, char* argv[])
 			if (result != SourceFile::MutationResult::NoMutation) {
 				HTMLExporter::WriteHTML(HTMLFileName, file.GetSaved(), Summary(end,
 				                                                               lineinfile + 1, endingline, mutations,
-				                                                               compilefailes, testfailes,
-				                                                               survived).str());
+                                                                               buildfailes, testfailes,
+                                                                               survived).str());
 				file.Revert();
 			};
 		} else {
@@ -217,9 +219,9 @@ int main(int argc, char* argv[])
 		}
 	}
 	HTMLExporter::WriteHTML(HTMLFileName, file.GetSaved(), Summary(end,
-	                                                               linecount, linecount, mutations,
-	                                                               compilefailes, testfailes,
-	                                                               survived).str());
+                                                                   linecount, linecount, mutations,
+                                                                   buildfailes, testfailes,
+                                                                   survived).str());
 	std::cout << std::endl << std::endl;
 	std::cout << "The following mutations survived: " << std::endl;
 	for (size_t i = 0; i < file.LineCount(); ++i) {
@@ -229,7 +231,7 @@ int main(int argc, char* argv[])
 		}
 	}
 	std::cout << Summary(end,
-	                     endingline, endingline, mutations, compilefailes, testfailes, survived).str();
+                         endingline, endingline, mutations, buildfailes, testfailes, survived).str();
 
 	for (auto &Mutation : Mutations) {
 		delete Mutation;
@@ -244,7 +246,7 @@ int main(int argc, char* argv[])
 
 std::stringstream
 Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start,
-        size_t linesdone, size_t linestotal, size_t mutations, size_t compilefailes, size_t testfailes,
+        size_t linesdone, size_t linestotal, size_t mutations, size_t buildfailes, size_t testfailes,
         size_t survived) {
 	std::chrono::duration<double, std::ratio<1,1>> totaltime = std::chrono::system_clock::now() - timepoint_start;
 	std::stringstream s;
@@ -256,7 +258,7 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
 	s << "Time passed: " << (int)totaltime.count()/60 << " minutes" << "\n";
 	s << "Lines processed: " << linesdone << " of " << linestotal << "\n";
 	s << "Mutations: " << mutations << "\n";
-	s << "Compile failed: " << compilefailes << "\n";
+	s << "Build failed: " << buildfailes << "\n";
 	s << "Test failed: " << testfailes << "\n";
 	s << "Mutations survived: " << survived << "\n";
 	s << "Mutation killratio: " << killratio << "%\n";
@@ -283,7 +285,7 @@ bool Test() {
 	return RunCommand(testcommand.c_str());
 }
 
-bool Compile() {
-	std::cout << "Compiling..." << std::endl;
-	return RunCommand(compilecommand.c_str());
+bool Build() {
+	std::cout << "Building..." << std::endl;
+	return RunCommand(buildcommand.c_str());
 }

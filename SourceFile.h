@@ -12,7 +12,7 @@ public:
 	enum MutationResult
 	{
 		NoMutation = 0,
-		FailedCompile = 1,
+		FailedBuild = 1,
 		FailedTest = 2,
 		Survived = 3
 	};
