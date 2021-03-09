@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
 	};
 	auto end = std::chrono::system_clock::now();
     buildtime = end - start;
-	std::cout << "Nominal build-time: " << buildtime.count() << std::endl;
+	//std::cout << "Nominal build-time: " << buildtime.count() << std::endl;
 	start = std::chrono::system_clock::now();
 	if (!Test()) {
 		std::cerr << "Unmodified test failed. Fix your program.";
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
 	}
 	end = std::chrono::system_clock::now();
 	testtime = end-start;
-	std::cout << "Nominal test-time: " << testtime.count() << std::endl;
+	//std::cout << "Nominal test-time: " << testtime.count() << std::endl;
 
 	// TODO: Mutations as options.
 
@@ -154,16 +154,20 @@ int main(int argc, char* argv[])
 	    exit(5);
     }
 	size_t linecount = endingline-startingline;
+	std::cout << "" << std::endl; // Line to be deleted but progress report
 	for (size_t i = 0; i < linecount; ++i) {
 		double percentagedone = (double)i/(double)linecount;
 		std::chrono::duration<double,std::ratio<1,1>> timeelapsed = std::chrono::system_clock::now() - end;
 		// Approximately 1.87 second per line on my comp. Maybe mix in this in the estimate?
 		std::chrono::duration<double,std::ratio<1,1>> timeremaining = (timeelapsed / percentagedone)-timeelapsed;
+		/*
 		std::cout << std::endl << std::endl << "**********************************************" << std::endl;
 		std::cout << "Mutation progress:" << std::endl;
 		std::cout << i << " of " << linecount << " lines processed in " << std::ceil(timeelapsed.count()) << " seconds." << std::endl;
 		std::cout << "Approximately " << (int)(percentagedone*100) << "% done, " << std::ceil(timeremaining.count()/60) << " minutes left." << std::endl;
 		std::cout << "**********************************************" << std::endl << std::endl;
+		*/
+		std::cout << "\033[A\33[2K\rMutation-testing " << (int)(percentagedone*100) << "% done, " << std::ceil(timeremaining.count()/60) << " minute(s) left." << std::endl;
 		size_t lineinfile = i+startingline;
 		const std::string &line = file.GetLine(lineinfile);
 		SourceFile::MutationResult result = SourceFile::NoMutation;
@@ -171,11 +175,11 @@ int main(int argc, char* argv[])
 			for (auto &mutator : Mutations) {
 				const size_t mutationsPossible = mutator->CheckMutationsPossible(line);
 				for (size_t j = 0; j < mutationsPossible/* && result < SourceFile::MutationResult::Survived*/; ++j) {
-					std::cout << "Original:" << std::endl;
-					std::cout << lineinfile << ": " << line << std::endl;
-					std::cout << "Mutation:" << std::endl;
+					//std::cout << "Original:" << std::endl;
+					//std::cout << lineinfile << ": " << line << std::endl;
+					//std::cout << "Mutation:" << std::endl;
 					const std::string &mutatedline = mutator->MutateLine(line, j);
-					std::cout << lineinfile << ": " << mutatedline << std::endl;
+					//std::cout << lineinfile << ": " << mutatedline << std::endl;
 					assert(line != mutatedline);
 					file.Modify(i+startingline, mutatedline);
 					mutations++;
@@ -184,11 +188,11 @@ int main(int argc, char* argv[])
 						if (Test()) {
 							result = SourceFile::MutationResult::Survived;
 							file.SaveModification(result);
-							std::cout << "Mutation survived." << std::endl;
+							//std::cout << "Mutation survived." << std::endl;
 							survived++;
 						} else {
 							testfailes++;
-							std::cout << "Mutation killed." << std::endl;
+							//std::cout << "Mutation killed." << std::endl;
 							if (result < SourceFile::MutationResult::FailedTest) {
 								result = SourceFile::MutationResult::FailedTest;
 								file.SaveModification(result);
@@ -196,7 +200,7 @@ int main(int argc, char* argv[])
 						}
 					} else {
 						buildfailes++;
-						std::cout << "Build failed." << std::endl;
+						//std::cout << "Build failed." << std::endl;
 						if (result < SourceFile::MutationResult::FailedBuild) {
 							result = SourceFile::MutationResult::FailedBuild;
 							file.SaveModification(result);
@@ -213,26 +217,27 @@ int main(int argc, char* argv[])
 				file.Revert();
 			};
 		} else {
-			std::cout << line << std::endl;
-			std::cout << "Multiline comment, ignoring." << std::endl;
+			//std::cout << line << std::endl;
+			//std::cout << "Multiline comment, ignoring." << std::endl;
 
 		}
 	}
+    std::cout << "\033[A\33[2K\rMutation-testing 100% done, finished." << std::endl;
 	HTMLExporter::WriteHTML(HTMLFileName, file.GetSaved(), Summary(end,
                                                                    linecount, linecount, mutations,
                                                                    buildfailes, testfailes,
                                                                    survived).str());
-	std::cout << std::endl << std::endl;
-	std::cout << "The following mutations survived: " << std::endl;
-	for (size_t i = 0; i < file.LineCount(); ++i) {
-		if (file.GetSaved().at(i).second == SourceFile::MutationResult::Survived)
-		{
-			std::cout << filepath << ":" << (i+1) << " " << file.GetSaved().at(i).first << std::endl;
-		}
-	}
 	std::cout << Summary(end,
                          endingline, endingline, mutations, buildfailes, testfailes, survived).str();
-
+    std::cout << std::endl;
+    std::cout << "The following mutations survived: " << std::endl;
+    for (size_t i = 0; i < file.LineCount(); ++i) {
+        if (file.GetSaved().at(i).second == SourceFile::MutationResult::Survived)
+        {
+            std::cout << filepath << ":" << (i+1) << " " << file.GetSaved().at(i).first << std::endl;
+        }
+    }
+    std::cout << std::endl << "Results have been written to " << HTMLFileName << std::endl;
 	for (auto &Mutation : Mutations) {
 		delete Mutation;
 	}
@@ -252,7 +257,7 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
 	std::stringstream s;
 	std::time_t timev = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	size_t killratio = KillRatioPerc(testfailes, survived);
-	s << "\n" << "\n";
+	s << "\n";
 	s << "-----------------------------" << "\n";
 	s << /*"Time now: " << "\n" << */std::ctime(&timev);// << "\n";
 	s << "Time passed: " << (int)totaltime.count()/60 << " minutes" << "\n";
@@ -277,15 +282,24 @@ size_t KillRatioPerc(size_t testfailes, size_t survived) {
 
 bool RunCommand(const char * command)
 {
-	return (system(command) == 0);
+    char newcommand[1024];
+    // https://stackoverflow.com/questions/19843557/suppress-system-output/19843697
+    // TODO:  > nul  for windows
+    if (true) {
+        snprintf(newcommand, 1024, "%s > /dev/null 2> /dev/null", command);
+    } else {
+        snprintf(newcommand, 1024, "%s", command);
+    }
+    commandrtrn = system(newcommand) == 0;
+    return commandrtrn;
 }
 
 bool Test() {
-	std::cout << "Testing..." << std::endl;
+	//std::cout << "Testing..." << std::endl;
 	return RunCommand(testcommand.c_str());
 }
 
 bool Build() {
-	std::cout << "Building..." << std::endl;
+	//std::cout << "Building..." << std::endl;
 	return RunCommand(buildcommand.c_str());
 }
