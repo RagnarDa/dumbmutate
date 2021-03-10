@@ -55,3 +55,5 @@ $ dumbmutate --mutate=FileToTest.cpp --build="gtimeout 30 make" --test="gtimeout
 Test specific part of FileToTest.cpp, line 10 to 20:
 
 $ dumbmutate --mutate=FileToTest.cpp --build="make" --test="./test" --start=10 --end=20
+
+<p align="center"><img src="/demo.gif?raw=true"/></p>
