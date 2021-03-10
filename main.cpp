@@ -237,7 +237,8 @@ int main(int argc, char* argv[])
             std::cout << filepath << ":" << (i+1) << " " << file.GetSaved().at(i).first << std::endl;
         }
     }
-    std::cout << std::endl << "Results have been written to " << HTMLFileName << std::endl;
+    std::cout << "Results have been written to " << HTMLFileName << std::endl;
+    std::cout << std::endl;
 	for (auto &Mutation : Mutations) {
 		delete Mutation;
 	}
