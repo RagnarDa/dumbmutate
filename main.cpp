@@ -291,8 +291,7 @@ bool RunCommand(const char * command)
     } else {
         snprintf(newcommand, 1024, "%s", command);
     }
-    commandrtrn = system(newcommand) == 0;
-    return commandrtrn;
+    return system(newcommand) == 0;
 }
 
 bool Test() {
