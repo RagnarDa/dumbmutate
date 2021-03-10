@@ -5,8 +5,7 @@ I tried different mutation-solutions but all was difficult to set up (especially
 and since mutation testing is of questionable utility anyway I didn't want to spend too
 much time on it so I created my own as-simple as possible (hence "dumb") solution.
 
-
-Features:
+# Features:
 - No dependencies (except maybe timeout on Mac, see below). Pure C++11 and should work on
 any compiler.
 - Only command-line options needed, so could be part of a buildsystem for example.
@@ -18,42 +17,40 @@ go-to-code directly in your IDE.
 
 
 Simple example:
-
-$ dumbmutate --mutate=FileToMutate.cpp --build=make --test=./test
-
+```bash
+dumbmutate --mutate=FileToMutate.cpp --build=make --test=./test
+```
 Results will be shown both in terminal and in MutationResult.html
 
+# How to build dumbmutate:
+```bash
+cmake ./
+make
+```
 
-How to build:
-
-$ cmake ./
-
-$ make
-
-
-
-When the test or build hang:
-You should use the timeout command (available on Linux but needs to be installed on Mac,
+# If the test or build hang:
+You should use the timeout command (available out-of-the-box on Linux but needs to be installed on Mac,
 needs to figure out how to do this on Windows).
 
-
 Recommendation for Mac (requires homebrew):
-
-$ brew install coreutils
-
+```bash
+brew install coreutils
+```
 
 Run with timeout 30 seconds (Linux):
-
-$ dumbmutate --mutate=FileToTest.cpp --build="timeout 30 make" --test="timeout 30 ./test"
-
+```bash
+dumbmutate --mutate=FileToTest.cpp --build="timeout 30 make" --test="timeout 30 ./test"
+```
 
 Run with timeout 30 seconds (Mac):
+```bash
+dumbmutate --mutate=FileToTest.cpp --build="gtimeout 30 make" --test="gtimeout 30 ./test"
+```
 
-$ dumbmutate --mutate=FileToTest.cpp --build="gtimeout 30 make" --test="gtimeout 30 ./test"
-
-
-Test specific part of FileToTest.cpp, line 10 to 20:
-
-$ dumbmutate --mutate=FileToTest.cpp --build="make" --test="./test" --start=10 --end=20
+# Mutate specific part:
+Mutate specific lines of FileToTest.cpp, line 10 to 20:
+```bash
+dumbmutate --mutate=FileToTest.cpp --build="make" --test="./test" --start=10 --end=20
+```
 
 <p align="center"><img src="/demo.gif?raw=true"/></p>
