@@ -285,9 +285,12 @@ bool RunCommand(const char * command)
 {
     char newcommand[1024];
     // https://stackoverflow.com/questions/19843557/suppress-system-output/19843697
-    // TODO:  > nul  for windows
     if (true) {
+#ifdef _WIN32
+        snprintf(newcommand, 1024, "%s > nul 2> nul", command);
+#else
         snprintf(newcommand, 1024, "%s > /dev/null 2> /dev/null", command);
+#endif
     } else {
         snprintf(newcommand, 1024, "%s", command);
     }

@@ -3,7 +3,7 @@ project(dumbmutate)
 
 set(CMAKE_CXX_STANDARD 11)
 if (WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -pedantic -Wextra")
 endif()
