@@ -2,7 +2,7 @@
 Mutation testing is a way to test your automated tests. Imagine you have a unit-test or integration-test that 100% covers your code. Can you be sure your test actually would catch errors in your code? Mutation testing goes through your code and changes it slightly, like changing a operator (== into = for example) or a number (5 into a 0 for example). It then builds your code and tests it, hoping that your tests will fail (mutation killed). If the test passes the mutation is said to have survived, and the line is marked. For more explanation see Wikipedia: https://en.wikipedia.org/wiki/Mutation_testing
 
 # About dumbmutate
-This is a as simple as possible implementation of this technique. There is no setup and no depencies. Just download the binary and run it from the command-line. Works with any unit-testing framework (GoogleTest, Catch2, boosttest etc), as long as they return a non-zero value on failed tests. It is geared towards C-style languages but might work with other ones too.
+This is a as simple as possible implementation of this technique. There is no setup and no depencies. Just download the binary and run it from the command-line. Works with any unit-testing framework (GoogleTest, Catch2, boosttest etc), or even without a complete framework as long as your code return a non-zero value when it fails. It is geared towards C-style languages but might work with other ones too.
 
 # Features:
 - Only command-line options needed, so could be part of a buildsystem for example. Has a threshold option to return error-code when mutations killed falls below a specified percentage.  
