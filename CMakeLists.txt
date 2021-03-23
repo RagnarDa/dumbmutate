@@ -8,4 +8,4 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -pedantic -Wextra")
 endif()
 
-add_executable(dumbmutate main.cpp SourceFile.cpp SourceFile.h MutatorBase.cpp MutatorBase.h MutatorCaret.cpp MutatorCaret.h MutatorEqual.cpp MutatorEqual.h MutatorAddSubtr.cpp MutatorAddSubtr.h HTMLExporter.cpp HTMLExporter.h MutatorNEqual.cpp MutatorNEqual.h MutatorIncrDecr.cpp MutatorIncrDecr.h MutatorNumShift.cpp MutatorNumShift.h MutatorAndOr.cpp MutatorAndOr.h MutatorTrueFalse.cpp MutatorTrueFalse.h Utility.h Utility.cpp)
+add_executable(dumbmutate Source/main.cpp Source/SourceFile.cpp Source/SourceFile.h Source/MutatorBase.cpp Source/MutatorBase.h Source/MutatorCaret.cpp Source/MutatorCaret.h Source/MutatorEqual.cpp Source/MutatorEqual.h Source/MutatorAddSubtr.cpp Source/MutatorAddSubtr.h Source/HTMLExporter.cpp Source/HTMLExporter.h Source/MutatorNEqual.cpp Source/MutatorNEqual.h Source/MutatorIncrDecr.cpp Source/MutatorIncrDecr.h Source/MutatorNumShift.cpp Source/MutatorNumShift.h Source/MutatorAndOr.cpp Source/MutatorAndOr.h Source/MutatorTrueFalse.cpp Source/MutatorTrueFalse.h Source/Utility.h Source/Utility.cpp)
