@@ -154,9 +154,25 @@ int main(int argc, char* argv[])
 	    exit(5);
     }
 	size_t linecount = endingline-startingline;
+
+	// Let's count mutations to go through
+	size_t mutationstotal = 0;
+	size_t mutationsdonetotal = 0;
+	for (size_t i = 0; i < linecount; ++i) {
+        size_t lineinfile = i + startingline;
+        const std::string &line = file.GetLine(lineinfile);
+        if (!file.GetIsMultilineComment(i)) {
+            for (auto &mutator : Mutations) {
+                const size_t mutationsPossible = mutator->CheckMutationsPossible(line);
+                mutationstotal += mutationsPossible;
+            }
+        }
+    }
+	std::cout << "Possible mutations: " << mutationstotal << std::endl;
+
 	std::cout << "" << std::endl; // Line to be deleted but progress report
 	for (size_t i = 0; i < linecount; ++i) {
-		double percentagedone = (double)i/(double)linecount;
+		double percentagedone = (double)mutationsdonetotal/(double)mutationstotal;
 		std::chrono::duration<double,std::ratio<1,1>> timeelapsed = std::chrono::system_clock::now() - end;
 		// Approximately 1.87 second per line on my comp. Maybe mix in this in the estimate?
 		std::chrono::duration<double,std::ratio<1,1>> timeremaining = (timeelapsed / percentagedone)-timeelapsed;
@@ -175,6 +191,7 @@ int main(int argc, char* argv[])
 			for (auto &mutator : Mutations) {
 				const size_t mutationsPossible = mutator->CheckMutationsPossible(line);
 				for (size_t j = 0; j < mutationsPossible/* && result < SourceFile::MutationResult::Survived*/; ++j) {
+				    mutationsdonetotal++;
 					//std::cout << "Original:" << std::endl;
 					//std::cout << lineinfile << ": " << line << std::endl;
 					//std::cout << "Mutation:" << std::endl;
@@ -228,7 +245,7 @@ int main(int argc, char* argv[])
                                                                    buildfailes, testfailes,
                                                                    survived).str());
 	std::cout << Summary(end,
-                         endingline, endingline, mutations, buildfailes, testfailes, survived).str();
+                         linecount, linecount, mutations, buildfailes, testfailes, survived).str();
     std::cout << std::endl;
     std::cout << "The following mutations survived: " << std::endl;
     for (size_t i = 0; i < file.LineCount(); ++i) {
