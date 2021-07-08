@@ -11,6 +11,7 @@
 #include "MutatorNumShift.h"
 #include "MutatorAndOr.h"
 #include "MutatorTrueFalse.h"
+#include "CommandRunner.h"
 #include <iostream>
 #include <sstream>
 #include <chrono>
@@ -84,6 +85,9 @@ std::string testcommand;
 std::string buildcommand;
 int main(int argc, char* argv[])
 {
+    auto rtrn = CommandRunner::RunCommand("C:\\Users\\chris\\CLionProjects\\dumbmutate\\infinitytest.exe", 10000);
+    std::cout << (int)rtrn << std::endl;
+    return 0;
 	std::chrono::duration<double, std::ratio<1,1>> buildtime = std::chrono::duration<double>(600 * 5);
 	std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
 	size_t threshold = 0;

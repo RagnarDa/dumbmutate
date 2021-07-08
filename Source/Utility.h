@@ -6,6 +6,6 @@
 #define DUMBMUTATE_UTILITY_H
 #include <string>
 
-std::string ReplaceAll(std::string Original, std::string ToReplace, std::string ReplaceWith);
+std::string ReplaceAll(std::string Original, const std::string ToReplace, const std::string ReplaceWith);
 
 #endif //DUMBMUTATE_UTILITY_H
