@@ -11,6 +11,7 @@
 #include "MutatorNumShift.h"
 #include "MutatorAndOr.h"
 #include "MutatorTrueFalse.h"
+#include "MutatorIf.h"
 #include "CommandRunner.h"
 #include <iostream>
 #include <sstream>
@@ -142,7 +143,8 @@ int main(int argc, char* argv[])
 		, new MutatorNEqual()
 		, new MutatorNumShift()
 		, new MutatorAndOr()
-		, new MutatorTrueFalse()});
+		, new MutatorTrueFalse()
+	    , new MutatorIf()});
 
 	std::string HTMLFileName = std::string("./MutationResult_" + ReplaceAll(ReplaceAll(filepath,"/","_"),"\\","_") + ".html");
 	if (endingline < 0)
