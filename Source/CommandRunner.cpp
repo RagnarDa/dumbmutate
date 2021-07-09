@@ -34,7 +34,7 @@ struct HandleGuard {
 CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int timeout) {
     if (timeout <= 0)
     {
-        return system(command) == 0 ? CommandResult::CommandCompleted : CommandResult::CommandErrorCodeNonZero;
+        return system(command) == 0 ? CommandResult::CommandResultZero : CommandResult::CommandResultCodeNonZero;
     }
     wchar_t wcommand[1024];
     mbstowcs(wcommand, command, strlen(command)+1);
@@ -99,8 +99,8 @@ CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int 
             DWORD error_code;
             if (GetExitCodeProcess(pi.hProcess, &error_code)) {
                 return error_code == 0 ?
-                    CommandResult::CommandCompleted
-                    :CommandResult::CommandErrorCodeNonZero;
+                    CommandResult::CommandResultZero
+                    :CommandResult::CommandResultCodeNonZero;
             } else {
                 std::wcerr << L"GetExitCodeProcess failed. (ERROR ";
                 std::wcerr << GetLastError() << L")" << std::endl;
@@ -113,6 +113,84 @@ CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int 
             return CommandResult::InternalError;
     }
 }
+#else
+
+// POSIX/LINUX/MAC
+#include <iostream>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <atomic>
+#include <csignal>
+#include <thread>
+
+using std::cout; using std::endl;
+using std::string;
+
+constexpr std::atomic<int> handler_exit_code(103);
+
+std::atomic<int> child_pid;
+
+
+void SigQuitHandler(int signal_number) {
+    kill(child_pid, SIGTERM);
+    while ((child_pid = wait(nullptr)) > 0);
+    _exit(handler_exit_code);
+}
+
+
+pid_t SpawnChild(std::string command) {
+    pid_t ch_pid = fork();
+    if (ch_pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    } else if (ch_pid > 0) {
+        cout << "spawn child with pid - " << ch_pid << endl;
+        return ch_pid;
+    } else {
+        int returncode = system(command.c_str());
+        std::cout << "Return code: " << returncode << std::endl;
+        exit(returncode);
+    }
+}
+
+CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int timeoutms) {
+    // In case we are signaled to quit while this is running
+    signal(SIGQUIT, SigQuitHandler);
+
+    if (timeoutms <= 0) {
+        // Regular old system() when no timeout
+        return system(command) == 0
+            ? CommandResult::CommandResultZero
+            : CommandResult::CommandResultCodeNonZero;
+    }
+
+    // Spawn child
+    child_pid = SpawnChild(command);
+    int status;
+
+    // A spin wait
+    while ((waitpid(child_pid, &status, WNOHANG)) == 0 && timeoutms > 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));;
+        timeoutms--;
+    }
+    if (timeoutms <= 0) {
+        kill(child_pid, SIGTERM);
+    }
+
+    if (WIFEXITED(status)) {
+        return WEXITSTATUS(status) == 0 ?
+               CommandResult::CommandResultZero
+                               :CommandResult::CommandResultCodeNonZero;
+    } else if (WIFSIGNALED(status)) {
+        return CommandResult::CommandTimedout;
+    } else if (WIFSTOPPED(status)) {
+        return CommandResult::CommandTimedout;
+    } else {
+        throw std::exception();
+    }
+}
+
+
 #endif
 
 
