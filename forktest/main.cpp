@@ -29,7 +29,9 @@ pid_t SpawnChild(std::string command) {
         cout << "spawn child with pid - " << ch_pid << endl;
         return ch_pid;
     } else {
-        int returncode = system(command.c_str());
+        //int returncode = system(command.c_str());
+        //int returncode = execl("/bin/sh", "sh", "-c", command.c_str(), (char *) NULL);
+	int returncode = execl("./infinity", "infinity", (char *) NULL);
         std::cout << "Return code: " << returncode << std::endl;
         exit(returncode);
     }
@@ -54,7 +56,10 @@ int RunCommand(std::string command, int timeoutms) {
         timeoutms--;
     }
     if (timeoutms <= 0) {
+	    std::cout << "Killing process..." << std::endl;
+	    kill(child_pid, SIGCHLD);
         kill(child_pid, SIGTERM);
+        kill(child_pid, SIGKILL);
     }
 
     if (WIFEXITED(status)) {
@@ -69,12 +74,15 @@ int RunCommand(std::string command, int timeoutms) {
         printf("Something strange just happened.\n");
     }
 
+    while ((child_pid = wait(nullptr)) > 0)
+        cout << "child " << child_pid << " terminated" << endl;
+
     return WEXITSTATUS(status);
 }
 
 int main() {
     string program_name("echo \"Hello\"");
-    std::cout << "RunCommand: " << RunCommand("echo hello", 1000);
+    std::cout << "RunCommand: " << RunCommand("./infinity", 10000) << std::endl;
     return 0;
     //char * const *arg_list[] = {program_name.data(), nullptr};
 
