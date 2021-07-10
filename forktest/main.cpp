@@ -29,9 +29,8 @@ pid_t SpawnChild(std::string command) {
         cout << "spawn child with pid - " << ch_pid << endl;
         return ch_pid;
     } else {
-        //int returncode = system(command.c_str());
-        //int returncode = execl("/bin/sh", "sh", "-c", command.c_str(), (char *) NULL);
-	int returncode = execl("./infinity", "infinity", (char *) NULL);
+	    setpgid(getpid(), getpid()); // Assign the process to a process group that will allow all processes be killed.
+        int returncode = system(command.c_str());
         std::cout << "Return code: " << returncode << std::endl;
         exit(returncode);
     }
@@ -57,9 +56,7 @@ int RunCommand(std::string command, int timeoutms) {
     }
     if (timeoutms <= 0) {
 	    std::cout << "Killing process..." << std::endl;
-	    kill(child_pid, SIGCHLD);
-        kill(child_pid, SIGTERM);
-        kill(child_pid, SIGKILL);
+        kill(-child_pid, SIGKILL);
     }
 
     if (WIFEXITED(status)) {
@@ -82,7 +79,7 @@ int RunCommand(std::string command, int timeoutms) {
 
 int main() {
     string program_name("echo \"Hello\"");
-    std::cout << "RunCommand: " << RunCommand("./infinity", 10000) << std::endl;
+    std::cout << "RunCommand: " << RunCommand("while true ; do echo xx ; sleep 1; done", 10000) << std::endl;
     return 0;
     //char * const *arg_list[] = {program_name.data(), nullptr};
 
