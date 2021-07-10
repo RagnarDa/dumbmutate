@@ -144,11 +144,14 @@ pid_t SpawnChild(std::string command) {
         perror("fork");
         exit(EXIT_FAILURE);
     } else if (ch_pid > 0) {
-        cout << "spawn child with pid - " << ch_pid << endl;
+        //cout << "spawn child with pid - " << ch_pid << endl;
         return ch_pid;
     } else {
+        // Assign the process to a process group that will allow all processes be killed.
+        setpgid(getpid(), getpid());
+
         int returncode = system(command.c_str());
-        std::cout << "Return code: " << returncode << std::endl;
+        //std::cout << "Return code: " << returncode << std::endl;
         exit(returncode);
     }
 }
@@ -174,23 +177,23 @@ CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int 
         timeoutms--;
     }
     if (timeoutms <= 0) {
-        kill(child_pid, SIGTERM);
+        std::cout << "Process timed out, killing..." << std::endl;
+        // Not sure why but you need to add the minus for process group
+        kill(-child_pid, SIGKILL);
     }
 
     if (WIFEXITED(status)) {
         return WEXITSTATUS(status) == 0 ?
                CommandResult::CommandResultZero
                                :CommandResult::CommandResultCodeNonZero;
-    } else if (WIFSIGNALED(status)) {
+    } else if (WIFSIGNALED(status) && timeoutms <= 0) {
         return CommandResult::CommandTimedout;
-    } else if (WIFSTOPPED(status)) {
+    } else if (WIFSTOPPED(status) && timeoutms <= 0) {
         return CommandResult::CommandTimedout;
     } else {
         throw std::exception();
     }
 }
-
-
 #endif
 
 

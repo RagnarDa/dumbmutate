@@ -56,7 +56,7 @@ int RunCommand(std::string command, int timeoutms) {
     }
     if (timeoutms <= 0) {
 	    std::cout << "Killing process..." << std::endl;
-        kill(-child_pid, SIGKILL);
+        kill(-child_pid, SIGKILL); // Not sure why but you need to add minus to kill it when using
     }
 
     if (WIFEXITED(status)) {
@@ -79,7 +79,7 @@ int RunCommand(std::string command, int timeoutms) {
 
 int main() {
     string program_name("echo \"Hello\"");
-    std::cout << "RunCommand: " << RunCommand("while true ; do echo xx ; sleep 1; done", 10000) << std::endl;
+    std::cout << "RunCommand: " << RunCommand("ping google.com", 10000) << std::endl;
     return 0;
     //char * const *arg_list[] = {program_name.data(), nullptr};
 
