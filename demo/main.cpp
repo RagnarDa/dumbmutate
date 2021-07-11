@@ -5,6 +5,7 @@
 // Function to test
 int GetCharacterNumber(std::string CharacterName)
 {
+    while (false){}; // Potential infinite loop
 	if (CharacterName == "Lloyd")
 		return 0;
 	else if (CharacterName == "Harry")

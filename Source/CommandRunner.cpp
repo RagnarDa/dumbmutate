@@ -32,6 +32,12 @@ struct HandleGuard {
 };
 
 CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int timeout) {
+    // Pipe output to /dev/null
+    if (suppressoutput)
+    {
+        command.append(" > nul 2> nul");
+    }
+
     if (timeout <= 0)
     {
         return system(command) == 0 ? CommandResult::CommandResultZero : CommandResult::CommandResultCodeNonZero;
@@ -122,6 +128,7 @@ CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int 
 #include <atomic>
 #include <csignal>
 #include <thread>
+#include <sys/mman.h>
 
 using std::cout; using std::endl;
 using std::string;
@@ -131,38 +138,56 @@ constexpr std::atomic<int> handler_exit_code(103);
 std::atomic<int> child_pid;
 
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 void SigQuitHandler(int signal_number) {
+#pragma clang diagnostic pop
     kill(child_pid, SIGTERM);
     while ((child_pid = wait(nullptr)) > 0);
     _exit(handler_exit_code);
 }
 
 
+// Shared memory between main process and fork
+static int * sharedreturncode;
+const int sharedreturncodeuntouched = 135792468; // Chosen by fair dice roll
+
 pid_t SpawnChild(std::string command) {
+    sharedreturncode = static_cast<int *>(mmap(NULL, sizeof *sharedreturncode, PROT_READ | PROT_WRITE,
+                                       MAP_SHARED | MAP_ANONYMOUS, -1, 0));
+    *sharedreturncode = sharedreturncodeuntouched;
+
     pid_t ch_pid = fork();
     if (ch_pid == -1) {
         perror("fork");
         exit(EXIT_FAILURE);
     } else if (ch_pid > 0) {
-        //cout << "spawn child with pid - " << ch_pid << endl;
         return ch_pid;
     } else {
         // Assign the process to a process group that will allow all processes be killed.
         setpgid(getpid(), getpid());
 
         int returncode = system(command.c_str());
-        //std::cout << "Return code: " << returncode << std::endl;
+        if (returncode == sharedreturncodeuntouched)
+            returncode++;
+        *sharedreturncode = returncode;
         exit(returncode);
     }
 }
 
-CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int timeoutms) {
+CommandRunner::CommandResult CommandRunner::RunCommand(std::string command, int timeoutms, bool suppressoutput) {
     // In case we are signaled to quit while this is running
     signal(SIGQUIT, SigQuitHandler);
 
+    if (suppressoutput)
+    {
+        // Pipe output to /dev/null
+        command.append(" > /dev/null 2> /dev/null");
+    }
+
     if (timeoutms <= 0) {
         // Regular old system() when no timeout
-        return system(command) == 0
+        return system(command.c_str()) == 0
             ? CommandResult::CommandResultZero
             : CommandResult::CommandResultCodeNonZero;
     }
@@ -171,28 +196,27 @@ CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int 
     child_pid = SpawnChild(command);
     int status;
 
-    // A spin wait
+    // A spin wait, possibly something to improve
     while ((waitpid(child_pid, &status, WNOHANG)) == 0 && timeoutms > 0) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));;
         timeoutms--;
     }
+
+    int returncode = *sharedreturncode;
+    munmap(sharedreturncode, sizeof *sharedreturncode);
+
     if (timeoutms <= 0) {
-        std::cout << "Process timed out, killing..." << std::endl;
-        // Not sure why but you need to add the minus for process group
+        // Not sure why but you need to add the minus for process group, I guess it is because <-1 means all childs
         kill(-child_pid, SIGKILL);
+        return CommandResult::CommandTimedout;
     }
 
-    if (WIFEXITED(status)) {
-        return WEXITSTATUS(status) == 0 ?
-               CommandResult::CommandResultZero
-                               :CommandResult::CommandResultCodeNonZero;
-    } else if (WIFSIGNALED(status) && timeoutms <= 0) {
-        return CommandResult::CommandTimedout;
-    } else if (WIFSTOPPED(status) && timeoutms <= 0) {
-        return CommandResult::CommandTimedout;
-    } else {
-        throw std::exception();
-    }
+    // Makes sure the shared memory has actually been set
+    assert(returncode != sharedreturncodeuntouched);
+
+    return returncode == 0 ?
+        CommandResult::CommandResultZero
+        : CommandResult::CommandResultCodeNonZero;
 }
 #endif
 

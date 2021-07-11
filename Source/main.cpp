@@ -22,9 +22,9 @@
 #include <cmath>
 #include <cassert>
 
-bool Build();
+bool Build(int timeoutms);
 
-bool Test();
+bool Test(int timeoutms);
 
 std::stringstream
 Summary(std::chrono::time_point<std::chrono::system_clock> timepoint_start,
@@ -82,13 +82,13 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 	}
 }
 
+const double timeoutmodifier = 5.0; // How many times longer a command is allowed to run than the initial case
+size_t timeoutstest = 0;
+size_t timeoutsbuild = 0;
 std::string testcommand;
 std::string buildcommand;
 int main(int argc, char* argv[])
 {
-    auto rtrn = CommandRunner::RunCommand("C:\\Users\\chris\\CLionProjects\\dumbmutate\\infinitytest.exe", 10000);
-    std::cout << (int)rtrn << std::endl;
-    return 0;
 	std::chrono::duration<double, std::ratio<1,1>> buildtime = std::chrono::duration<double>(600 * 5);
 	std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
 	size_t threshold = 0;
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 	}
 	auto start = std::chrono::system_clock::now();
 	SourceFile file(filepath);
-	if (!Build()) {
+	if (!Build(0)) {
 		std::cerr << "Unmodified build failed. Fix your program.";
 		exit(2);
 	};
@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     buildtime = end - start;
 	//std::cout << "Nominal build-time: " << buildtime.count() << std::endl;
 	start = std::chrono::system_clock::now();
-	if (!Test()) {
+	if (!Test(0)) {
 		std::cerr << "Unmodified test failed. Fix your program.";
 		exit(3);
 	}
@@ -207,8 +207,8 @@ int main(int argc, char* argv[])
 					file.Modify(i+startingline, mutatedline);
 					mutations++;
 					file.WriteModification();
-					if (Build()) {
-						if (Test()) {
+					if (Build(0)) {
+						if (Test(std::ceil(testtime.count()) * 1000 * timeoutmodifier)) { // Round up?
 							result = SourceFile::MutationResult::Survived;
 							file.SaveModification(result);
 							//std::cout << "Mutation survived." << std::endl;
@@ -283,12 +283,13 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
 	size_t killratio = KillRatioPerc(testfailes, survived);
 	s << "\n";
 	s << "-----------------------------" << "\n";
-	s << /*"Time now: " << "\n" << */std::ctime(&timev);// << "\n";
+	s << std::ctime(&timev);
 	s << "Time passed: " << (int)totaltime.count()/60 << " minutes" << "\n";
 	s << "Lines processed: " << linesdone << " of " << linestotal << "\n";
 	s << "Mutations: " << mutations << "\n";
 	s << "Build failed: " << buildfailes << "\n";
 	s << "Test failed: " << testfailes << "\n";
+	s << "Test timedout: " << timeoutstest << "\n";
 	s << "Mutations survived: " << survived << "\n";
 	s << "Mutation killratio: " << killratio << "%\n";
 	s << "-----------------------------" << "\n";
@@ -304,28 +305,25 @@ size_t KillRatioPerc(size_t testfailes, size_t survived) {
 }
 
 
-bool RunCommand(const char * command)
-{
-    char newcommand[1024];
-    // https://stackoverflow.com/questions/19843557/suppress-system-output/19843697
-    if (true) {
-#ifdef _WIN32
-        snprintf(newcommand, 1024, "%s > nul 2> nul", command);
-#else
-        snprintf(newcommand, 1024, "%s > /dev/null 2> /dev/null", command);
-#endif
-    } else {
-        snprintf(newcommand, 1024, "%s", command);
-    }
-    return system(newcommand) == 0;
-}
 
-bool Test() {
+bool Test(int timeoutms) {
 	//std::cout << "Testing..." << std::endl;
-	return RunCommand(testcommand.c_str());
+	auto rtrn = CommandRunner::RunCommand(testcommand,timeoutms,true);
+	if (rtrn == CommandRunner::CommandResult::CommandTimedout) {
+        timeoutstest++;
+        return false;
+    } else {
+	    return rtrn==CommandRunner::CommandResult::CommandResultZero;
+	}
 }
 
-bool Build() {
+bool Build(int timeoutms) {
 	//std::cout << "Building..." << std::endl;
-	return RunCommand(buildcommand.c_str());
+    auto rtrn = CommandRunner::RunCommand(buildcommand,timeoutms,true);
+    if (rtrn == CommandRunner::CommandResult::CommandTimedout) {
+        timeoutsbuild++;
+        return false;
+    } else {
+        return rtrn==CommandRunner::CommandResult::CommandResultZero;
+    }
 }
