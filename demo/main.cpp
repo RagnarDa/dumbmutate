@@ -6,6 +6,11 @@
 int GetCharacterNumber(std::string CharacterName)
 {
     while (false){}; // Potential infinite loop
+    bool nothing = false;
+    if (nothing)
+    {
+        std::cout << "This shouldnt happen" << std::endl;
+    }
 	if (CharacterName == "Lloyd")
 		return 0;
 	else if (CharacterName == "Harry")

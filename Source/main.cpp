@@ -13,14 +13,10 @@
 #include "MutatorTrueFalse.h"
 #include "MutatorIf.h"
 #include "CommandRunner.h"
-#include <iostream>
-#include <sstream>
 #include <chrono>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
 #include <cmath>
 #include <cassert>
+#include <cstdlib>
 
 bool Build(int timeoutms);
 
@@ -33,8 +29,6 @@ Summary(std::chrono::time_point<std::chrono::system_clock> timepoint_start,
 
 size_t KillRatioPerc(size_t testfailes, size_t survived);
 
-#include <cstdio>
-#include <cstdlib>
 
 cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 {
@@ -82,7 +76,9 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 	}
 }
 
-const double timeoutmodifier = 5.0; // How many times longer a command is allowed to run than the initial case
+// How many times longer a command is allowed to run than the initial case
+const int timeoutmodifier = 5;
+
 size_t timeoutstest = 0;
 size_t timeoutsbuild = 0;
 std::string testcommand;
@@ -118,7 +114,7 @@ int main(int argc, char* argv[])
 	if (!Build(0)) {
 		std::cerr << "Unmodified build failed. Fix your program.";
 		exit(2);
-	};
+	}
 	auto end = std::chrono::system_clock::now();
     buildtime = end - start;
 	//std::cout << "Nominal build-time: " << buildtime.count() << std::endl;
@@ -156,7 +152,7 @@ int main(int argc, char* argv[])
 	    exit(4);
     } else if (startingline > (int)file.LineCount())
     {
-	    std::cerr << "Starting line past end of file." << std::endl;;
+	    std::cerr << "Starting line past end of file." << std::endl;
 	    exit(5);
     }
 	size_t linecount = endingline-startingline;
@@ -207,8 +203,8 @@ int main(int argc, char* argv[])
 					file.Modify(i+startingline, mutatedline);
 					mutations++;
 					file.WriteModification();
-					if (Build(0)) {
-						if (Test(std::ceil(testtime.count()) * 1000 * timeoutmodifier)) { // Round up?
+					if (Build((int)std::ceil(buildtime.count()) * 1000 * timeoutmodifier)) {
+						if (Test((int)std::ceil(testtime.count()) * 1000 * timeoutmodifier)) { // Round up?
 							result = SourceFile::MutationResult::Survived;
 							file.SaveModification(result);
 							//std::cout << "Mutation survived." << std::endl;
@@ -238,7 +234,7 @@ int main(int argc, char* argv[])
                                                                                buildfailes, testfailes,
                                                                                survived).str());
 				file.Revert();
-			};
+			}
 		} else {
 			//std::cout << line << std::endl;
 			//std::cout << "Multiline comment, ignoring." << std::endl;
