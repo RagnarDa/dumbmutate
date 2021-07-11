@@ -129,6 +129,7 @@ CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int 
 #include <csignal>
 #include <thread>
 #include <sys/mman.h>
+#include <cassert>
 
 using std::cout; using std::endl;
 using std::string;
@@ -138,10 +139,8 @@ constexpr std::atomic<int> handler_exit_code(103);
 std::atomic<int> child_pid;
 
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-parameter"
 void SigQuitHandler(int signal_number) {
-#pragma clang diagnostic pop
+	assert(signal_number != 0);
     kill(child_pid, SIGTERM);
     while ((child_pid = wait(nullptr)) > 0);
     _exit(handler_exit_code);

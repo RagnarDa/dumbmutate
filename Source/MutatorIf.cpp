@@ -3,6 +3,7 @@
 //
 
 #include "MutatorIf.h"
+#include <algorithm>
 
 
 std::string MutatorIf::MutateLine(const std::string &line, size_t mutationnr) {
