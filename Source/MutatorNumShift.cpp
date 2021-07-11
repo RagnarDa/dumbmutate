@@ -16,7 +16,7 @@ std::string MutatorNumShift::MutateLine(const std::string &line, size_t mutation
 			if (occurencies == mutationnr)
 			{
 				std::string rtrn = line;
-                unsigned long pos = SearchString(line, nr, 0);
+                std::string::size_type pos = SearchString(line, nr, 0);
                 const char *nrstring = nr.c_str();
                 int i = std::atoi(nrstring); // NOLINT(cert-err34-c)
                 int shift = NumShift(i);

@@ -4,6 +4,8 @@ project(dumbmutate)
 set(CMAKE_CXX_STANDARD 11)
 if (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX")
+    # This needs to be here to fix a bug in earlier CMake:
+    string(REGEX REPLACE "/W[3|4]" "/w" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -pedantic -Wextra")
 endif()

@@ -15,10 +15,10 @@ size_t MutatorBase::CountOccurences(std::string StringToSearch, std::string Targ
 	return occurrences;
 }
 
-unsigned long
-MutatorBase::SearchString(const std::string &StringToSearch, const std::string &TargetString, unsigned long pos)
+std::string::size_type
+MutatorBase::SearchString(const std::string &StringToSearch, const std::string &TargetString, std::string::size_type pos)
 {
-	unsigned long rtrn = StringToSearch.find(TargetString, pos );
+	std::string::size_type rtrn = StringToSearch.find(TargetString, pos );
 	if (StringToSearch.find("//") != std::string::npos
 	&& StringToSearch.find("//") < rtrn)
 		return std::string::npos;
@@ -54,7 +54,7 @@ int MutatorBase::NumShift(int nr) {
 }
 
 size_t MutatorBase::CountOccurences(std::string StringToSearch, std::vector<std::string> TargetStrings) {
-	int occurences = 0;
+	size_t occurences = 0;
 	for (const auto & target : TargetStrings)
 	{
 		occurences += CountOccurences(StringToSearch, target);

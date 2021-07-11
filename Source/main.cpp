@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cassert>
 #include <cstdlib>
+#include <time.h>
 
 bool Build(int timeoutms);
 
@@ -87,9 +88,9 @@ int main(int argc, char* argv[])
 {
 	std::chrono::duration<double, std::ratio<1,1>> buildtime = std::chrono::duration<double>(600 * 5);
 	std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
-	size_t threshold = 0;
-	int startingline = 0;
-	int endingline = -1;
+	size_t threshold;
+	int startingline;
+	int endingline;
 	std::string filepath;
 	try {
 		auto result = ParseCommandLine(argc, argv);
@@ -99,7 +100,7 @@ int main(int argc, char* argv[])
 		threshold = result["threshold"].as<size_t>();
 		startingline = result["start"].as<int>() - 1;
 		endingline = result["end"].as<int>() - 1;
-	} catch (std::exception & e){
+	} catch (...) {
 		std::cout << "How to use:" << std::endl;
 		std::cout << R"(dumbmutate --mutate="filetotest.cpp" --build="make" --test="./test")" << std::endl;
 		std::cout << "Optionally for a 80% killratio threshold:" << std::endl;
@@ -277,9 +278,11 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
 	std::stringstream s;
 	std::time_t timev = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	size_t killratio = KillRatioPerc(testfailes, survived);
+	char timebuff[1024];
+    ctime_s(timebuff, 1023, &timev);
 	s << "\n";
 	s << "-----------------------------" << "\n";
-	s << std::ctime(&timev);
+	s << timebuff;
 	s << "Time passed: " << (int)totaltime.count()/60 << " minutes" << "\n";
 	s << "Lines processed: " << linesdone << " of " << linestotal << "\n";
 	s << "Mutations: " << mutations << "\n";

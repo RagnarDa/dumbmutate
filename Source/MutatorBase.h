@@ -22,8 +22,8 @@ protected:
 	static int NumShift(int nr);
 	const std::vector<std::string> numbers = {"0","1","2","3","4","5","6","7","8","9"};
 
-	static unsigned long
-	SearchString(const std::string &StringToSearch, const std::string &TargetString, unsigned long pos);
+	static std::string::size_type
+	SearchString(const std::string &StringToSearch, const std::string &TargetString, std::string::size_type pos);
 };
 
 

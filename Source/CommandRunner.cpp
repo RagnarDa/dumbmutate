@@ -6,6 +6,7 @@
 
 #ifdef WIN32
 // Borrowed from here: https://github.com/cernoch/tuxliketimeout/blob/master/tuxliketimeout.cpp
+// and here: https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output
 #include <limits>
 #include <string>
 #include <iostream>
@@ -30,25 +31,85 @@ struct HandleGuard {
         CloseHandle(m_handle);
     }
 };
+#define BUFSIZE 4096
 
-CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int timeout) {
-    // Pipe output to /dev/null
-    if (suppressoutput)
+HANDLE g_hChildStd_IN_Rd = NULL;
+HANDLE g_hChildStd_IN_Wr = NULL;
+HANDLE g_hChildStd_OUT_Rd = NULL;
+HANDLE g_hChildStd_OUT_Wr = NULL;
+
+HANDLE g_hInputFile = NULL;
+// TODO: Should this method be called? Maybe clearing the pipe?
+void ReadFromPipe(void)
+
+// Read output from the child process's pipe for STDOUT
+// and write to the parent process's pipe for STDOUT.
+// Stop when there is no more data.
+{
+    DWORD dwRead, dwWritten;
+    CHAR chBuf[BUFSIZE];
+    BOOL bSuccess = FALSE;
+    HANDLE hParentStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    for (;;)
     {
-        command.append(" > nul 2> nul");
+        bSuccess = ReadFile( g_hChildStd_OUT_Rd, chBuf, BUFSIZE, &dwRead, NULL);
+        if( ! bSuccess || dwRead == 0 ) break;
+
+        bSuccess = WriteFile(hParentStdOut, chBuf,
+                             dwRead, &dwWritten, NULL);
+        if (! bSuccess ) break;
     }
+}
+
+CommandRunner::CommandResult CommandRunner::RunCommand(std::string command, int timeout, bool suppressoutput) {
+
 
     if (timeout <= 0)
     {
-        return system(command) == 0 ? CommandResult::CommandResultZero : CommandResult::CommandResultCodeNonZero;
+        // Pipe output to /dev/null
+        if (suppressoutput)
+        {
+            command.append(" > nul 0> nul");
+        }
+        return system(command.c_str()) == 0 ? CommandResult::CommandResultZero : CommandResult::CommandResultCodeNonZero;
     }
+
+    // We need to pipe output to be able to suppress it
+    SECURITY_ATTRIBUTES saAttr;
+
+
+// Set the bInheritHandle flag so pipe handles are inherited.
+
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = NULL;
+
+// Create a pipe for the child process's STDOUT.
+
+    if ( ! CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0) )
+        exit(EXIT_FAILURE);
+
+// Ensure the read handle to the pipe for STDOUT is not inherited.
+
+    if ( ! SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0) )
+        exit(EXIT_FAILURE);
+
     wchar_t wcommand[1024];
-    mbstowcs(wcommand, command, strlen(command)+1);
+    size_t size = strlen(command.c_str()) + 1;
+    size_t outSize;
+    mbstowcs_s(&outSize, wcommand, size, command.c_str(), size-1);
     LPWSTR command_line_buf = const_cast<wchar_t*>(wcommand);
 
     STARTUPINFOW si;
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
+    if (suppressoutput) {
+        si.hStdError = g_hChildStd_OUT_Wr;
+        si.hStdOutput = g_hChildStd_OUT_Wr;
+        si.hStdInput = g_hChildStd_IN_Rd; // TODO: Maybe we don't need to pipe input.
+        si.dwFlags |= STARTF_USESTDHANDLES;
+    }
 
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
@@ -59,7 +120,7 @@ CommandRunner::CommandResult CommandRunner::RunCommand(const char *command, int 
             command_line_buf, // Command line
             NULL,           // Process handle not inheritable
             NULL,           // Thread handle not inheritable
-            FALSE,          // Set handle inheritance to FALSE
+            TRUE,          // Set handle inheritance to FALSE
             0,              // No creation flags
             NULL,           // Use parent's environment block
             NULL,           // Use parent's starting directory
