@@ -13,11 +13,12 @@
 #include "MutatorTrueFalse.h"
 #include "MutatorIf.h"
 #include "CommandRunner.h"
+#include "MutatorXYZ.h"
 #include <chrono>
 #include <cmath>
 #include <cassert>
 #include <cstdlib>
-#include <time.h>
+#include <ctime>
 
 bool Build(int timeoutms);
 
@@ -78,16 +79,16 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 }
 
 // How many times longer a command is allowed to run than the initial case
-const int timeoutmodifier = 5;
+const int timeoutmodifier = 10;
 
 size_t timeoutstest = 0;
 size_t timeoutsbuild = 0;
 std::string testcommand;
 std::string buildcommand;
+std::chrono::duration<double, std::ratio<1,1>> buildtime = std::chrono::duration<double>(600 * 5);
+std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
 int main(int argc, char* argv[])
 {
-	std::chrono::duration<double, std::ratio<1,1>> buildtime = std::chrono::duration<double>(600 * 5);
-	std::chrono::duration<double, std::ratio<1,1>> testtime = std::chrono::duration<double>(600*5);
 	size_t threshold;
 	int startingline;
 	int endingline;
@@ -111,6 +112,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	auto start = std::chrono::system_clock::now();
+    auto beginning = std::chrono::system_clock::now();
 	SourceFile file(filepath);
 	if (!Build(0)) {
 		std::cerr << "Unmodified build failed. Fix your program.";
@@ -141,9 +143,10 @@ int main(int argc, char* argv[])
 		, new MutatorNumShift()
 		, new MutatorAndOr()
 		, new MutatorTrueFalse()
-	    , new MutatorIf()});
+	    , new MutatorIf()
+	    , new MutatorXYZ()});
 
-	std::string HTMLFileName = std::string("./MutationResult_" + ReplaceAll(ReplaceAll(filepath,"/","_"),"\\","_") + ".html");
+	std::string HTMLFileName = std::string("./MutationResult_" + ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(filepath,"/","_"),"\\","_"), ":", ""), "~", "") + ".html");
 	if (endingline < 0)
     {
 	    endingline = (int)file.LineCount();
@@ -176,9 +179,14 @@ int main(int argc, char* argv[])
 	std::cout << "" << std::endl; // Line to be deleted but progress report
 	for (size_t i = 0; i < linecount; ++i) {
 		double percentagedone = (double)mutationsdonetotal/(double)mutationstotal;
-		std::chrono::duration<double,std::ratio<1,1>> timeelapsed = std::chrono::system_clock::now() - end;
+		std::chrono::duration<double,std::ratio<1,1>> timeelapsed = std::chrono::system_clock::now() - beginning;
 		// Approximately 1.87 second per line on my comp. Maybe mix in this in the estimate?
 		std::chrono::duration<double,std::ratio<1,1>> timeremaining = (timeelapsed / percentagedone)-timeelapsed;
+		if (percentagedone == 0)
+        {
+		    // Do a initial estimate on first run
+		    timeremaining = (buildtime + testtime) * mutationstotal;
+        }
 		/*
 		std::cout << std::endl << std::endl << "**********************************************" << std::endl;
 		std::cout << "Mutation progress:" << std::endl;
@@ -204,7 +212,7 @@ int main(int argc, char* argv[])
 					file.Modify(i+startingline, mutatedline);
 					mutations++;
 					file.WriteModification();
-					if (Build((int)std::ceil(buildtime.count()) * 1000 * timeoutmodifier)) {
+					if (Build(0)) { // Don't timeout builds...?
 						if (Test((int)std::ceil(testtime.count()) * 1000 * timeoutmodifier)) { // Round up?
 							result = SourceFile::MutationResult::Survived;
 							file.SaveModification(result);
@@ -276,13 +284,16 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
         size_t survived) {
 	std::chrono::duration<double, std::ratio<1,1>> totaltime = std::chrono::system_clock::now() - timepoint_start;
 	std::stringstream s;
-	std::time_t timev = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	size_t killratio = KillRatioPerc(testfailes, survived);
 	char timebuff[1024];
-    ctime_s(timebuff, 1023, &timev);
+    time_t temp;
+    struct tm *timeptr;
+    temp = time(NULL);
+    timeptr = localtime(&temp);
+    strftime(timebuff, sizeof(timebuff), "%c", timeptr);
 	s << "\n";
 	s << "-----------------------------" << "\n";
-	s << timebuff;
+	s << timebuff << "\n";
 	s << "Time passed: " << (int)totaltime.count()/60 << " minutes" << "\n";
 	s << "Lines processed: " << linesdone << " of " << linestotal << "\n";
 	s << "Mutations: " << mutations << "\n";
@@ -307,22 +318,39 @@ size_t KillRatioPerc(size_t testfailes, size_t survived) {
 
 bool Test(int timeoutms) {
 	//std::cout << "Testing..." << std::endl;
+    auto start = std::chrono::system_clock::now();
 	auto rtrn = CommandRunner::RunCommand(testcommand,timeoutms,true);
+    auto end = std::chrono::system_clock::now();
+    auto testtimethis = end - start;
+
 	if (rtrn == CommandRunner::CommandResult::CommandTimedout) {
         timeoutstest++;
         return false;
     } else {
+	    // Update testing time continually
+	    if (testtimethis > testtime)
+        {
+	        testtime = testtimethis;
+        }
 	    return rtrn==CommandRunner::CommandResult::CommandResultZero;
 	}
 }
 
 bool Build(int timeoutms) {
 	//std::cout << "Building..." << std::endl;
+    auto start = std::chrono::system_clock::now();
     auto rtrn = CommandRunner::RunCommand(buildcommand,timeoutms,true);
+    auto end = std::chrono::system_clock::now();
+    auto buildtimethis = end - start;
     if (rtrn == CommandRunner::CommandResult::CommandTimedout) {
         timeoutsbuild++;
         return false;
     } else {
+        // Update build time continually
+        if (buildtimethis > buildtime)
+        {
+            buildtime = buildtimethis;
+        }
         return rtrn==CommandRunner::CommandResult::CommandResultZero;
     }
 }

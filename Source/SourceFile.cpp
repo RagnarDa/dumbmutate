@@ -72,7 +72,9 @@ void SourceFile::WriteFile(std::vector<std::string> &vector) const {
 	if (!out.is_open()) {
 		std::cerr << "Can't write to file " << FilePath << std::endl;
 		out.close();
-		return;
+		// Don't think we can recover from this one...
+		exit(EXIT_FAILURE);
+//		return;
 //		throw FileError("Failed to open file \"" + name + "\"");
 	}
 	for (const auto &line : vector)
