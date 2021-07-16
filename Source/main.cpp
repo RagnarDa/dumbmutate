@@ -80,7 +80,7 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 
 // How many times longer a command is allowed to run than the initial case
 const int testtimeoutmodifier = 10;
-const int buildtimeoutmodifier = 100;
+const int buildtimeoutmodifier = 10;
 
 size_t timeoutstest = 0;
 size_t timeoutsbuild = 0;

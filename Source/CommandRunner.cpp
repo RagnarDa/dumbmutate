@@ -107,7 +107,7 @@ CommandRunner::CommandResult CommandRunner::RunCommand(std::string command, int 
     if (suppressoutput) {
         si.hStdError = g_hChildStd_OUT_Wr;
         si.hStdOutput = g_hChildStd_OUT_Wr;
-        si.hStdInput = g_hChildStd_IN_Rd; // TODO: Maybe we don't need to pipe input.
+        si.hStdInput = g_hChildStd_IN_Rd;
         si.dwFlags |= STARTF_USESTDHANDLES;
     }
 
@@ -120,7 +120,7 @@ CommandRunner::CommandResult CommandRunner::RunCommand(std::string command, int 
             command_line_buf, // Command line
             NULL,           // Process handle not inheritable
             NULL,           // Thread handle not inheritable
-            TRUE,          // Set handle inheritance to FALSE
+            FALSE,          // Set handle inheritance to FALSE
             0,              // No creation flags
             NULL,           // Use parent's environment block
             NULL,           // Use parent's starting directory
