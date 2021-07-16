@@ -19,8 +19,12 @@ std::string::size_type
 MutatorBase::SearchString(const std::string &StringToSearch, const std::string &TargetString, std::string::size_type pos)
 {
 	std::string::size_type rtrn = StringToSearch.find(TargetString, pos );
-	if (StringToSearch.find("//") != std::string::npos
+	if ((StringToSearch.find("//") != std::string::npos
 	&& StringToSearch.find("//") < rtrn)
+	||  // Try to filter out quoted strings:
+	    (StringToSearch.find("\"",0) != std::string::npos
+	    && StringToSearch.find("\"", 0) < rtrn
+	    && StringToSearch.find("\"", rtrn) != std::string::npos))
 		return std::string::npos;
 	else
 		return rtrn;

@@ -79,7 +79,8 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 }
 
 // How many times longer a command is allowed to run than the initial case
-const int timeoutmodifier = 10;
+const int testtimeoutmodifier = 10;
+const int buildtimeoutmodifier = 10;
 
 size_t timeoutstest = 0;
 size_t timeoutsbuild = 0;
@@ -138,7 +139,7 @@ int main(int argc, char* argv[])
 		  new MutatorEqual()
 		, new MutatorAddSubtr()
 		, new MutatorIncrDecr()
-		, new MutatorCaret()
+		//, new MutatorCaret() // HACK! Don't use this for now, most of the time it causes build error
 		, new MutatorNEqual()
 		, new MutatorNumShift()
 		, new MutatorAndOr()
@@ -161,13 +162,34 @@ int main(int argc, char* argv[])
     }
 	size_t linecount = endingline-startingline;
 
+	// Let's ignore lines where mutations will likely fail on compile
+	// but take long time
+	const std::string ignorelineswithkeyword[] =
+	{
+        "template",
+        "constexpr",
+        "static_assert",
+        "using",
+    };
+	auto hasignorekeyword = [&](std::string line)
+    {
+        for (auto bannedword:ignorelineswithkeyword) {
+            if (line.find(bannedword) != std::string::npos)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+
 	// Let's count mutations to go through
 	size_t mutationstotal = 0;
 	size_t mutationsdonetotal = 0;
 	for (size_t i = 0; i < linecount; ++i) {
         size_t lineinfile = i + startingline;
         const std::string &line = file.GetLine(lineinfile);
-        if (!file.GetIsMultilineComment(i)) {
+        if (!file.GetIsMultilineComment(i) && !hasignorekeyword(line)) {
             for (auto &mutator : Mutations) {
                 const size_t mutationsPossible = mutator->CheckMutationsPossible(line);
                 mutationstotal += mutationsPossible;
@@ -198,7 +220,7 @@ int main(int argc, char* argv[])
 		size_t lineinfile = i+startingline;
 		const std::string &line = file.GetLine(lineinfile);
 		SourceFile::MutationResult result = SourceFile::NoMutation;
-		if (!file.GetIsMultilineComment(i)) {
+		if (!file.GetIsMultilineComment(i) && !hasignorekeyword(line)) {
 			for (auto &mutator : Mutations) {
 				const size_t mutationsPossible = mutator->CheckMutationsPossible(line);
 				for (size_t j = 0; j < mutationsPossible/* && result < SourceFile::MutationResult::Survived*/; ++j) {
@@ -212,8 +234,8 @@ int main(int argc, char* argv[])
 					file.Modify(i+startingline, mutatedline);
 					mutations++;
 					file.WriteModification();
-					if (Build(0)) { // Don't timeout builds...?
-						if (Test((int)std::ceil(testtime.count()) * 1000 * timeoutmodifier)) { // Round up?
+					if (Build((int)std::ceil(buildtime.count()) * 1000 * buildtimeoutmodifier)) {
+						if (Test((int)std::ceil(testtime.count()) * 1000 * testtimeoutmodifier)) {
 							result = SourceFile::MutationResult::Survived;
 							file.SaveModification(result);
 							//std::cout << "Mutation survived." << std::endl;
@@ -324,6 +346,7 @@ bool Test(int timeoutms) {
     auto testtimethis = end - start;
 
 	if (rtrn == CommandRunner::CommandResult::CommandTimedout) {
+	    //std::cout << "Test timedout" << std::endl;
         timeoutstest++;
         return false;
     } else {
@@ -343,6 +366,7 @@ bool Build(int timeoutms) {
     auto end = std::chrono::system_clock::now();
     auto buildtimethis = end - start;
     if (rtrn == CommandRunner::CommandResult::CommandTimedout) {
+        //std::cout << "Build timed out" << std::endl;
         timeoutsbuild++;
         return false;
     } else {
