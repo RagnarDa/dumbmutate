@@ -3,8 +3,10 @@
 //
 
 #include "MutatorXYZ.h"
+#include <cassert>
 // Just make one replacement per line, see if that works
 std::string MutatorXYZ::MutateLine(const std::string &line, size_t mutationnr) {
+	assert(mutationnr == 0);
     std::string rtrn = line;
     if (GetOccurence(line, "X", 0) != std::string::npos)
         rtrn.replace(GetOccurence(line, "X", 0), 1, "Y");
