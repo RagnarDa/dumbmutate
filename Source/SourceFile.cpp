@@ -14,7 +14,7 @@ SourceFile::SourceFile(std::string FilePathToLoad) : FilePath(std::move(FilePath
 	if (!in)
 	{
 		std::cerr << "Couldn't load the specified source file: " << FilePath << std::endl;
-		throw std::exception();
+		exit(1);
 	}
 	std::string line;
 	linecount = 0;
