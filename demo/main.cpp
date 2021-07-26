@@ -1,6 +1,5 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "doctest/doctest.h"
-#include <string>
+#include <cassert>
+#include <iostream>
 
 // Function to test
 int GetCharacterNumber(std::string CharacterName)
@@ -20,8 +19,8 @@ int GetCharacterNumber(std::string CharacterName)
 	return 0; // Bug: Same result as "Lloyd"
 }
 
-TEST_CASE("test of GetCharacterNumber") {
-    CHECK(GetCharacterNumber("Lloyd") == 0);
-    CHECK(GetCharacterNumber("Harry") == 1);
-    CHECK(GetCharacterNumber("Mary") != 0); // Lazy testing
+int main(){
+    assert(GetCharacterNumber("Lloyd") == 0);
+    assert(GetCharacterNumber("Harry") == 1);
+    assert(GetCharacterNumber("Mary") != 0); // Lazy testing
 }

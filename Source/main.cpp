@@ -115,6 +115,7 @@ int main(int argc, char* argv[])
 	auto start = std::chrono::system_clock::now();
     auto beginning = std::chrono::system_clock::now();
 	SourceFile file(filepath);
+	file.WriteOriginal(); // Hopefully will trigger a rebuild
 	if (!Build(0)) {
 		std::cerr << "Unmodified build failed. Fix your program.";
 		exit(2);
@@ -316,7 +317,7 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
 	s << "\n";
 	s << "-----------------------------" << "\n";
 	s << timebuff << "\n";
-	s << "Time passed: " << (int)totaltime.count()/60 << " minutes" << "\n";
+	s << "Time passed: " << (int)std::ceil(totaltime.count()/60) << " minutes" << "\n";
 	s << "Lines processed: " << linesdone << " of " << linestotal << "\n";
 	s << "Mutations: " << mutations << "\n";
 	s << "Build failed: " << buildfailes << "\n";
