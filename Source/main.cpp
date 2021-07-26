@@ -19,6 +19,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <ctime>
+#include <csignal>
 
 bool Build(int timeoutms);
 
@@ -81,6 +82,14 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 
 SourceFile file;
 
+void signalHandler( int signum ) {
+    std::cout << "Interrupt signal (" << signum << ") received. Restoring file.\n";
+
+    file.WriteOriginal();
+
+    exit(signum);
+}
+
 
 // How many times longer a command is allowed to run than the initial case
 const int testtimeoutmodifier = 10;
@@ -120,7 +129,13 @@ int main(int argc, char* argv[])
     auto beginning = std::chrono::system_clock::now();
 	file = SourceFile(filepath);
 	file.WriteOriginal(); // Hopefully will trigger a rebuild
-	if (!Build(0)) {
+
+	// Register signals so we can restore the file if exiting prematurely
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
+    signal(SIGABRT, signalHandler);
+
+    if (!Build(0)) {
 		std::cerr << "Unmodified build failed. Fix your program.";
 		exit(2);
 	}
