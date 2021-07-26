@@ -70,7 +70,7 @@ CommandRunner::CommandResult CommandRunner::RunCommand(std::string command, int 
         // Pipe output to /dev/null
         if (suppressoutput)
         {
-            command.append(" > nul 0> nul");
+            command.append(" > nul 2> nul");
         }
         return system(command.c_str()) == 0 ? CommandResult::CommandResultZero : CommandResult::CommandResultCodeNonZero;
     }
