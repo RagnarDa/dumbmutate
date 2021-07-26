@@ -78,6 +78,10 @@ cxxopts::ParseResult ParseCommandLine(int argc, char* argv[])
 	}
 }
 
+
+SourceFile file;
+
+
 // How many times longer a command is allowed to run than the initial case
 const int testtimeoutmodifier = 10;
 const int buildtimeoutmodifier = 10;
@@ -114,7 +118,7 @@ int main(int argc, char* argv[])
 	}
 	auto start = std::chrono::system_clock::now();
     auto beginning = std::chrono::system_clock::now();
-	SourceFile file(filepath);
+	file = SourceFile(filepath);
 	file.WriteOriginal(); // Hopefully will trigger a rebuild
 	if (!Build(0)) {
 		std::cerr << "Unmodified build failed. Fix your program.";

@@ -97,3 +97,7 @@ const std::vector<std::pair<std::string, SourceFile::MutationResult>> &SourceFil
 	return Saved;
 }
 
+SourceFile::SourceFile() {
+
+}
+
