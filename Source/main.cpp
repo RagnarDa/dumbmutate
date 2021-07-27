@@ -14,6 +14,7 @@
 #include "MutatorIf.h"
 #include "CommandRunner.h"
 #include "MutatorXYZ.h"
+#include "MutatorAndBitwiseAnd.h"
 #include <chrono>
 #include <cmath>
 #include <cassert>
@@ -179,7 +180,9 @@ int main(int argc, char* argv[])
 		, new MutatorAndOr()
 		, new MutatorTrueFalse()
 	    , new MutatorIf()
-	    , new MutatorXYZ()});
+	    , new MutatorXYZ()
+	    , new MutatorAndBitwiseAnd()
+	});
 
 	std::string HTMLFileName = std::string("./MutationResult_" + ReplaceAll(ReplaceAll(ReplaceAll(ReplaceAll(filepath,"/","_"),"\\","_"), ":", ""), "~", "") + ".html");
 	if (endingline < 0)
