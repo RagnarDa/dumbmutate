@@ -200,8 +200,9 @@ constexpr std::atomic<int> handler_exit_code(103);
 std::atomic<int> child_pid;
 
 
+#define UNUSED(x) (void)(x)
 void SigQuitHandler(int signal_number) {
-	assert(signal_number != 0);
+	UNUSED(signal_number);
     kill(child_pid, SIGTERM);
     while ((child_pid = wait(nullptr)) > 0);
     _exit(handler_exit_code);
