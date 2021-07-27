@@ -125,20 +125,34 @@ int main(int argc, char* argv[])
 
 		return 1;
 	}
-	auto start = std::chrono::system_clock::now();
-    auto beginning = std::chrono::system_clock::now();
-	file = SourceFile(filepath);
-	file.WriteOriginal(); // Hopefully will trigger a rebuild
 
-	// Register signals so we can restore the file if exiting prematurely
+    file = SourceFile(filepath);
+
+    // Register signals so we can restore the file if exiting prematurely
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
     signal(SIGABRT, signalHandler);
 
+	// Test-build
     if (!Build(0)) {
-		std::cerr << "Unmodified build failed. Fix your program.";
-		exit(2);
-	}
+        std::cerr << "Unmodified build failed. Fix your program.";
+        exit(2);
+    }
+
+	auto start = std::chrono::system_clock::now();
+    auto beginning = std::chrono::system_clock::now();
+
+
+    std::string addspace = file.GetLine(0);
+	addspace.append(" "); // A space will hopefully trigger a rebuild
+	file.Modify(0, addspace);
+	file.WriteModification();
+
+    if (!Build(0)) {
+        std::cerr << "Inconsequential modification build failed. This shouldn't happen.";
+        exit(1);
+    }
+
 	auto end = std::chrono::system_clock::now();
     buildtime = end - start;
 	//std::cout << "Nominal build-time: " << buildtime.count() << std::endl;
@@ -159,7 +173,7 @@ int main(int argc, char* argv[])
 		  new MutatorEqual()
 		, new MutatorAddSubtr()
 		, new MutatorIncrDecr()
-		//, new MutatorCaret() // HACK! Don't use this for now, most of the time it causes build error
+		, new MutatorCaret()
 		, new MutatorNEqual()
 		, new MutatorNumShift()
 		, new MutatorAndOr()
@@ -190,6 +204,7 @@ int main(int argc, char* argv[])
         "constexpr",
         "static_assert",
         "using",
+        "#include"
     };
 	auto hasignorekeyword = [&](std::string line)
     {
@@ -216,7 +231,12 @@ int main(int argc, char* argv[])
             }
         }
     }
-	std::cout << "Possible mutations: " << mutationstotal << std::endl;
+
+	// Time estimates in the beginning is wildly inaccurate it seems
+//	std::cout << "Possible mutations: " << mutationstotal << ". ";
+//	std::cout << "Estimated " << (int)std::ceil((mutationstotal * buildtime.count() * testtime.count()) / 60);
+//	std::cout << " to " << (int)std::ceil((mutationstotal * buildtime.count() * buildtimeoutmodifier * testtime.count() * testtimeoutmodifier) / 60);
+//	std::cout << " minutes." << std::endl;
 
 	std::cout << "" << std::endl; // Line to be deleted but progress report
 	for (size_t i = 0; i < linecount; ++i) {
