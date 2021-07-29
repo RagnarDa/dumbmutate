@@ -230,7 +230,7 @@ pid_t SpawnChild(std::string command) {
 
         int returncode = system(command.c_str());
         if (returncode == sharedreturncodeuntouched)
-            returncode++;
+            returncode++; // In the very unlikely event the return code is the same as the random number
         *sharedreturncode = returncode;
         exit(returncode);
     }
@@ -280,4 +280,3 @@ CommandRunner::CommandResult CommandRunner::RunCommand(std::string command, int 
         : CommandResult::CommandResultCodeNonZero;
 }
 #endif
-
