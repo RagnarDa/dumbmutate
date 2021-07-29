@@ -1,5 +1,5 @@
 //
-// Created by chris on 2021-07-07.
+// Created by Christoffer Wärnbring on 2021-07-07.
 //
 
 #ifndef DUMBMUTATE_COMMANDRUNNER_H
