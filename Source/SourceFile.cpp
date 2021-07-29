@@ -74,7 +74,6 @@ void SourceFile::WriteFile(std::vector<std::string> &vector) const {
 		out.close();
 		// Don't think we can recover from this one...
 		exit(EXIT_FAILURE);
-//		return;
 //		throw FileError("Failed to open file \"" + name + "\"");
 	}
 	for (const auto &line : vector)
@@ -100,4 +99,3 @@ const std::vector<std::pair<std::string, SourceFile::MutationResult>> &SourceFil
 SourceFile::SourceFile() {
 
 }
-
