@@ -258,6 +258,7 @@ CommandRunner::CommandResult CommandRunner::RunCommand(std::string command, int 
     int status;
 
     // A spin wait, possibly something to improve
+// TODO: What we really should have done is having a signal handler for SIGALRM and use alarm(timeout); and when the process has finished call raise(SIGALRM); I think this is hard though since the childs signal isn't received in the parent it seems.
     while ((waitpid(child_pid, &status, WNOHANG)) == 0 && timeoutms > 0) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));;
         timeoutms--;
