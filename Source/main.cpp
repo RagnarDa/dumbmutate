@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
 	// Time estimates in the beginning is wildly inaccurate it seems
 //	std::cout << "Possible mutations: " << mutationstotal << ". ";
 //	std::cout << "Estimated " << (int)std::ceil((mutationstotal * (buildtime.count() + testtime.count())) / 60);
-//	std::cout << " to " << (int)std::ceil((mutationstotal * buildtime.count() * buildtimeoutmodifier * testtime.count() * testtimeoutmodifier) / 60);
+//	std::cout << " to " << (int)std::ceil((mutationstotal * ((buildtime.count() * buildtimeoutmodifier) + (testtime.count() * testtimeoutmodifier))) / 60);
 //	std::cout << " minutes." << std::endl;
 
 	std::cout << "" << std::endl; // Line to be deleted but progress report
