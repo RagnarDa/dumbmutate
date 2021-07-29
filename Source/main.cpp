@@ -365,6 +365,7 @@ Summary(const std::chrono::time_point<std::chrono::system_clock> timepoint_start
 	s << "Build failed: " << buildfailes << "\n";
 	s << "Test failed: " << testfailes << "\n";
 	s << "Test timedout: " << timeoutstest << "\n";
+    s << "Build timedout: " << timeoutsbuild << "\n";
 	s << "Mutations survived: " << survived << "\n";
 	s << "Mutation killratio: " << killratio << "%\n";
 	s << "-----------------------------" << "\n";
