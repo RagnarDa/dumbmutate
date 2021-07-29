@@ -1,5 +1,5 @@
 //
-// Created by chris on 2021-07-07.
+// Created by Christoffer Wärnbring on 2021-07-07.
 //
 
 #include "CommandRunner.h"
@@ -280,5 +280,4 @@ CommandRunner::CommandResult CommandRunner::RunCommand(std::string command, int 
         : CommandResult::CommandResultCodeNonZero;
 }
 #endif
-
 
