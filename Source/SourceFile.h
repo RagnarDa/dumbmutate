@@ -9,7 +9,9 @@
 
 class SourceFile {
 public:
-	enum MutationResult
+    SourceFile();
+
+    enum MutationResult
 	{
 		NoMutation = 0,
 		FailedBuild = 1,

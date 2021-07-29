@@ -9,5 +9,9 @@ std::string MutatorCaret::MutateLine(const std::string &line, size_t mutationnr)
 }
 
 size_t MutatorCaret::CheckMutationsPossible(const std::string &line) {
+	if (CountOccurences(line, "<") == CountOccurences(line, ">"))
+	{
+		return 0; // filter out templates, includes
+	};
 	return CountOccurences(line, "<") + CountOccurences(line, ">");
 }

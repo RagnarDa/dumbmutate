@@ -14,7 +14,7 @@ SourceFile::SourceFile(std::string FilePathToLoad) : FilePath(std::move(FilePath
 	if (!in)
 	{
 		std::cerr << "Couldn't load the specified source file: " << FilePath << std::endl;
-		throw std::exception();
+		exit(1);
 	}
 	std::string line;
 	linecount = 0;
@@ -72,7 +72,8 @@ void SourceFile::WriteFile(std::vector<std::string> &vector) const {
 	if (!out.is_open()) {
 		std::cerr << "Can't write to file " << FilePath << std::endl;
 		out.close();
-		return;
+		// Don't think we can recover from this one...
+		exit(EXIT_FAILURE);
 //		throw FileError("Failed to open file \"" + name + "\"");
 	}
 	for (const auto &line : vector)
@@ -95,3 +96,6 @@ const std::vector<std::pair<std::string, SourceFile::MutationResult>> &SourceFil
 	return Saved;
 }
 
+SourceFile::SourceFile() {
+
+}

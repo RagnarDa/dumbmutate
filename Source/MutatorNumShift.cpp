@@ -16,8 +16,12 @@ std::string MutatorNumShift::MutateLine(const std::string &line, size_t mutation
 			if (occurencies == mutationnr)
 			{
 				std::string rtrn = line;
-                unsigned long pos = SearchString(line, nr, 0);
-                auto shifted = std::to_string(NumShift(std::atoi(nr.c_str()))).c_str(); // NOLINT(cert-err34-c)
+                std::string::size_type pos = SearchString(line, nr, 0);
+                const char *nrstring = nr.c_str();
+                int i = std::atoi(nrstring); // NOLINT(cert-err34-c)
+                int shift = NumShift(i);
+                const std::string &toString = std::to_string(shift);
+                auto shifted = toString.c_str();
                 return rtrn.replace(pos, 1, shifted);
 			}
 			occurencies++;
