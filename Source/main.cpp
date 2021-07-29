@@ -92,7 +92,7 @@ void signalHandler( int signum ) {
 }
 
 
-// How many times longer a command is allowed to run than the initial case
+// How many times longer a command is allowed to run than the longest successful run
 const int testtimeoutmodifier = 10;
 const int buildtimeoutmodifier = 10;
 
