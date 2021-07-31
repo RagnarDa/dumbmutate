@@ -38,19 +38,3 @@ Useful for example in a CI-solution where you could make dumbmutate return a err
 ```bash
 dumbmutate --mutate=FileToTest.cpp --build="make" --test="./test" --threshold=80
 ```
-
-# If the test or build hang:
-You should use the timeout command (available out-of-the-box on Linux but needs to be installed on Mac,
-and is available through cygwin on Windows).
-
-Run with timeout 30 seconds (Linux or Windows using cygwin):
-```bash
-dumbmutate --mutate=FileToTest.cpp --build="timeout 30 make" --test="timeout 30 ./test"
-```
-
-Run with timeout 30 seconds on Mac (requires homebrew):
-```bash
-brew install coreutils
-dumbmutate --mutate=FileToTest.cpp --build="gtimeout 30 make" --test="gtimeout 30 ./test"
-```
-
