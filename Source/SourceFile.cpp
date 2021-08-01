@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <cassert>
+bool fileloaded = false;
 
 SourceFile::SourceFile(std::string FilePathToLoad) : FilePath(std::move(FilePathToLoad)) {
 	std::ifstream in(FilePath);
@@ -38,6 +39,7 @@ SourceFile::SourceFile(std::string FilePathToLoad) : FilePath(std::move(FilePath
 			this->IsMultiLineComment.push_back(ismultilinecomment);
 		}
 	}
+	fileloaded = true;
 	this->Revert();
 }
 
@@ -90,7 +92,8 @@ void SourceFile::WriteModification() {
 
 SourceFile::~SourceFile() {
 	// Just to be safe
-	WriteOriginal();
+	if (fileloaded)
+		WriteOriginal();
 }
 
 const std::vector<std::pair<std::string, SourceFile::MutationResult>> &SourceFile::GetSaved() const {
